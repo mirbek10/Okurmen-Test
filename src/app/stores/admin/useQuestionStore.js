@@ -2,6 +2,48 @@
 import { create } from 'zustand';
 import { axiosAdmin } from '@/shared/lib/api/axiosAdmin';
 
+// Вспомогательная функция для очистки скобок из текста
+const cleanText = (text) => {
+    if (typeof text !== 'string') return text;
+    // Удаляем все круглые скобки и их содержимое
+    return text.replace(/\([^)]*\)/g, '').trim();
+};
+
+const cleanQuestionData = (question) => {
+    // Очищаем основной текст вопроса
+    const cleanedQuestion = {
+        ...question,
+        question_text: cleanText(question.question_text)
+    };
+
+    // Очищаем варианты ответов
+    if (Array.isArray(question.options)) {
+        cleanedQuestion.options = question.options.map(option => cleanText(option));
+        cleanedQuestion.original_options = question.options; // Сохраняем оригинал
+    }
+
+    // Очищаем правильный ответ (если это текст)
+    if (question.correct_answer_text) {
+        cleanedQuestion.correct_answer_text = cleanText(question.correct_answer_text);
+    }
+
+    // Очищаем поле answer_text, если оно есть (например, в открытых вопросах)
+    if (question.answer_text) {
+        cleanedQuestion.answer_text = cleanText(question.answer_text);
+    }
+
+    // Очищаем поле answer, если оно есть
+    if (question.answer) {
+        cleanedQuestion.answer = cleanText(question.answer);
+    }
+
+    return cleanedQuestion;
+};
+
+const cleanQuestions = (questions) => {
+    return questions.map(question => cleanQuestionData(question));
+};
+
 export const useQuestionStore = create((set, get) => ({
     // Состояние
     questions: [],
@@ -50,8 +92,11 @@ export const useQuestionStore = create((set, get) => ({
                 throw new Error('Вопросы не найдены');
             }
 
+            // Очищаем ВСЕ текстовые поля от круглых скобок
+            const cleanedQuestions = cleanQuestions(validQuestions);
+
             set({
-                questions: validQuestions,
+                questions: cleanedQuestions,
                 total,
                 limit,
                 offset,
@@ -59,8 +104,7 @@ export const useQuestionStore = create((set, get) => ({
                 loading: false
             });
 
-
-            return questions;
+            return cleanedQuestions;
         } catch (error) {
             console.error('Ошибка при загрузке вопросов:', error);
             set({
@@ -98,7 +142,7 @@ export const useQuestionStore = create((set, get) => ({
             };
 
             // Загружаем заново с текущими параметрами
-            const questions = await get().fetchQuestions(currentParams);
+            await get().fetchQuestions(currentParams);
 
             set({
                 uploading: false,
@@ -170,6 +214,11 @@ export const useQuestionStore = create((set, get) => ({
         return get().questions.find(q => q.id === id);
     },
 
+    // Очистить один вопрос (например, при редактировании)
+    cleanSingleQuestion: (question) => {
+        return cleanQuestionData(question);
+    },
+
     // Установить лимит на странице
     setPageLimit: async (newLimit) => {
         return get().fetchQuestions({
@@ -179,5 +228,10 @@ export const useQuestionStore = create((set, get) => ({
     },
 
     // Сброс ошибки
-    clearError: () => set({ error: null })
+    clearError: () => set({ error: null }),
+
+    // Вспомогательная функция для очистки скобок (можно использовать где угодно)
+    cleanText: (text) => {
+        return cleanText(text);
+    }
 }));

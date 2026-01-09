@@ -17,4 +17,16 @@ export const useSetAnswere = create((set, get) => ({
             set({ loading: false });
         }
     },
+    forcePostAnswere: async (data) => {
+        try {
+            set({ loading: true, error: null });
+            const response = await axiosUser.post(`/test/forceAnswers`, data);
+            const user = response.data;
+            set({ answere: user });
+        } catch (error) {
+            set({ error: (error).message });
+        } finally {
+            set({ loading: false });
+        }
+    }
 }));
