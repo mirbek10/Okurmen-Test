@@ -1,9 +1,8 @@
 import { createBrowserRouter } from "react-router-dom";
 
-import UserLayout from "../widgets/layout/userLayout";
+import UserLayout from "../widgets/layout/UserLayout";
 import { NotFound } from "../widgets/not-found/not-found.jsx";
 import AdminLayout from "../widgets/layout/AdminLayout";
-import path from "path";
 import { Dashboard } from "../pages/admin/dashboard/Dashboard";
 import TestMonitorPage from "@/pages/admin/test-monitor/TestMonitorPage";
 import Register from "@/pages/auth/register/Regist";
