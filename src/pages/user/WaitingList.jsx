@@ -55,17 +55,14 @@ export const WaitingList = () => {
     if (credentials.studentId && credentials.code) {
       // ВАЖНО: Если ваш бэкенд не поддерживает WebSocket, вам может потребоваться
       // периодический опрос (polling). Раскомментируйте этот блок, если нужно:
-      /*
+      
       const intervalId = setInterval(() => {
         getStatus(credentials.studentId, credentials.code);
       }, 5000); // Опрос каждые 5 секунд
 
       // Очистка интервала при размонтировании
       return () => clearInterval(intervalId);
-      */
-
-      // Для начала просто делаем один запрос при загрузке:
-       getStatus(credentials.studentId, credentials.code);
+      
     }
   }, [credentials, getStatus]);
 
@@ -124,9 +121,10 @@ export const WaitingList = () => {
     navigate("/", { replace: true });
   };
 
-  console.log(user);
 
   // --- РЕНДЕРИНГ ---
+
+
 
   // Показываем экран загрузки, если идет первоначальный запрос и данных пользователя еще нет
   if (loading && !user && testStatus === 'waiting') {
