@@ -32,11 +32,15 @@ const generateTestSessionId = (categoryId, studentId) => {
 export const StudentTestPage = () => {
   const navigate = useNavigate();
   const { id: categoryId } = useParams();
-  
+
   // Сторы
-  const { postAnswe } = useSetAnswere();
+  const { postAnswe, forcePostAnswere } = useSetAnswere();
   const { status, getStatus } = useTestStatus();
-  const { questions, fetchQuestions, loading: questionsLoading } = useQuestionStore();
+  const {
+    questions,
+    fetchQuestions,
+    loading: questionsLoading,
+  } = useQuestionStore();
 
   // Состояния
   const [loading, setLoading] = useState(true);
@@ -78,13 +82,12 @@ export const StudentTestPage = () => {
       try {
         setLoading(true);
         setError(null);
-        
+
         // Загружаем вопросы для выбранной категории
         await fetchQuestions({
-          category: categoryId === 'mixed' ? '' : categoryId,
-          limit: 9999 // Загружаем все вопросы категории
+          category: categoryId === "mixed" ? "" : categoryId,
+          limit: 9999, // Загружаем все вопросы категории
         });
-        
       } catch (err) {
         console.error("Ошибка загрузки вопросов:", err);
         setError("Не удалось загрузить вопросы для теста");
@@ -105,8 +108,8 @@ export const StudentTestPage = () => {
     try {
       // Фильтруем вопросы по категории (если не mixed тест)
       let filteredQuestions = questions;
-      if (categoryId !== 'mixed') {
-        filteredQuestions = questions.filter(q => q.category === categoryId);
+      if (categoryId !== "mixed") {
+        filteredQuestions = questions.filter((q) => q.category === categoryId);
       }
 
       if (filteredQuestions.length === 0) {
@@ -116,14 +119,17 @@ export const StudentTestPage = () => {
 
       // Проверяем, есть ли сохраненная сессия теста
       const savedSessionId = localStorage.getItem(`test_session_${categoryId}`);
-      const savedSessionData = savedSessionId 
-        ? JSON.parse(localStorage.getItem(savedSessionId) || '{}')
+      const savedSessionData = savedSessionId
+        ? JSON.parse(localStorage.getItem(savedSessionId) || "{}")
         : null;
 
       let selectedQuestions;
       let sessionId;
 
-      if (savedSessionData?.questions && savedSessionData?.studentId === studentData?.studentId) {
+      if (
+        savedSessionData?.questions &&
+        savedSessionData?.studentId === studentData?.studentId
+      ) {
         // Используем сохраненную сессию
         sessionId = savedSessionId;
         selectedQuestions = savedSessionData.questions;
@@ -133,31 +139,36 @@ export const StudentTestPage = () => {
         // Создаем новую сессию
         // Ограничиваем максимум 20 вопросов
         const maxQuestions = Math.min(20, filteredQuestions.length);
-        
+
         // Перемешиваем вопросы
         const shuffled = shuffleArray(filteredQuestions);
-        
+
         // Берем первые maxQuestions вопросов
         selectedQuestions = shuffled.slice(0, maxQuestions);
-        
+
         // Генерируем ID сессии
-        sessionId = generateTestSessionId(categoryId, studentData?.studentId || 'guest');
-        
+        sessionId = generateTestSessionId(
+          categoryId,
+          studentData?.studentId || "guest"
+        );
+
         // Сохраняем сессию
         localStorage.setItem(`test_session_${categoryId}`, sessionId);
-        localStorage.setItem(sessionId, JSON.stringify({
-          studentId: studentData?.studentId || 'guest',
-          category: categoryId,
-          questions: selectedQuestions,
-          answers: {},
-          currentIndex: 0,
-          createdAt: new Date().toISOString()
-        }));
+        localStorage.setItem(
+          sessionId,
+          JSON.stringify({
+            studentId: studentData?.studentId || "guest",
+            category: categoryId,
+            questions: selectedQuestions,
+            answers: {},
+            currentIndex: 0,
+            createdAt: new Date().toISOString(),
+          })
+        );
       }
 
       setTestQuestions(selectedQuestions);
       setTestSessionId(sessionId);
-
     } catch (err) {
       console.error("Ошибка формирования теста:", err);
       setError("Ошибка при создании теста");
@@ -171,12 +182,12 @@ export const StudentTestPage = () => {
     const saveProgress = () => {
       try {
         const sessionData = {
-          studentId: studentData?.studentId || 'guest',
+          studentId: studentData?.studentId || "guest",
           category: categoryId,
           questions: testQuestions,
           answers,
           currentIndex: currentQuestionIndex,
-          lastSaved: new Date().toISOString()
+          lastSaved: new Date().toISOString(),
         };
         localStorage.setItem(testSessionId, JSON.stringify(sessionData));
       } catch (err) {
@@ -186,11 +197,18 @@ export const StudentTestPage = () => {
 
     // Сохраняем при изменении ответов или текущего вопроса
     saveProgress();
-  }, [testSessionId, testQuestions, answers, currentQuestionIndex, categoryId, studentData]);
+  }, [
+    testSessionId,
+    testQuestions,
+    answers,
+    currentQuestionIndex,
+    categoryId,
+    studentData,
+  ]);
 
   // 5. ФУНКЦИЯ ОТПРАВКИ (сборка payload и запрос)
   const submitTest = useCallback(
-    async (finalAnswers) => {
+    async (finalAnswers, isAuto) => {
       if (isSubmitting || !testQuestions.length) return;
       setIsSubmitting(true);
 
@@ -202,7 +220,10 @@ export const StudentTestPage = () => {
         if (selectedOptionId !== undefined) {
           // Находим выбранный вариант
           const selectedOptionIndex = parseInt(selectedOptionId);
-          if (!isNaN(selectedOptionIndex) && question.options[selectedOptionIndex]) {
+          if (
+            !isNaN(selectedOptionIndex) &&
+            question.options[selectedOptionIndex]
+          ) {
             selectedOptionText = question.options[selectedOptionIndex];
             // Сравнение выбранного варианта с правильным ответом
             isCorrect = selectedOptionText === question.answer;
@@ -214,7 +235,7 @@ export const StudentTestPage = () => {
           answer: selectedOptionText || "Нет ответа",
           isCorrect: isCorrect,
           questionId: question.id,
-          questionIndex: index + 1
+          questionIndex: index + 1,
         };
       });
 
@@ -226,19 +247,27 @@ export const StudentTestPage = () => {
         answers: formattedAnswers,
         totalQuestions: testQuestions.length,
         answeredQuestions: Object.keys(finalAnswers).length,
-        testSessionId: testSessionId
+        testSessionId: testSessionId,
       };
 
       try {
-        await postAnswe(payload);
-        
+        if (isAuto) {
+          await forcePostAnswere(payload);
+        } else {
+          await postAnswe(payload);
+        }
+
         // Очищаем сохраненную сессию
         localStorage.removeItem(`test_session_${categoryId}`);
         if (testSessionId) {
           localStorage.removeItem(testSessionId);
         }
-        
-        alert(`Тест завершен! Вы ответили на ${Object.keys(finalAnswers).length} из ${testQuestions.length} вопросов.`);
+
+        alert(
+          `Тест завершен! Вы ответили на ${
+            Object.keys(finalAnswers).length
+          } из ${testQuestions.length} вопросов.`
+        );
         localStorage.removeItem("code");
         navigate("/", { replace: true });
       } catch (err) {
@@ -247,7 +276,16 @@ export const StudentTestPage = () => {
         setIsSubmitting(false);
       }
     },
-    [testQuestions, code, studentData, categoryId, testSessionId, navigate, postAnswe, isSubmitting]
+    [
+      testQuestions,
+      code,
+      studentData,
+      categoryId,
+      testSessionId,
+      navigate,
+      postAnswe,
+      isSubmitting,
+    ]
   );
 
   // 6. ПОЛЛИНГ СТАТУСА (Проверка завершения теста сервером)
@@ -269,7 +307,7 @@ export const StudentTestPage = () => {
   useEffect(() => {
     if (status === "finished" && !isSubmitting) {
       console.log("Тест завершен удаленно. Авто-отправка ответов...");
-      submitTest(answers);
+      submitTest(answers, "auto");
     }
   }, [status, answers, submitTest, isSubmitting]);
 
@@ -296,7 +334,7 @@ export const StudentTestPage = () => {
     const answeredCount = Object.keys(answers).length;
     const totalCount = testQuestions.length;
     let confirmMessage = "Вы уверены, что хотите завершить тест?";
-    
+
     if (answeredCount < totalCount) {
       confirmMessage = `Вы ответили на ${answeredCount} из ${totalCount} вопросов. Все равно завершить?`;
     }
@@ -309,41 +347,52 @@ export const StudentTestPage = () => {
   // Функция для перегенерации теста (новые случайные вопросы)
   const regenerateTest = () => {
     if (!testQuestions.length || isSubmitting) return;
-    
-    if (window.confirm("Вы уверены? Это создаст новый тест с другими вопросами. Текущие ответы будут потеряны.")) {
+
+    if (
+      window.confirm(
+        "Вы уверены? Это создаст новый тест с другими вопросами. Текущие ответы будут потеряны."
+      )
+    ) {
       // Очищаем сохраненную сессию
       localStorage.removeItem(`test_session_${categoryId}`);
       if (testSessionId) {
         localStorage.removeItem(testSessionId);
       }
-      
+
       // Сбрасываем состояние
       setTestQuestions([]);
       setAnswers({});
       setCurrentQuestionIndex(0);
       setTestSessionId(null);
-      
+
       // Формируем новый тест
-      const filteredQuestions = categoryId !== 'mixed' 
-        ? questions.filter(q => q.category === categoryId)
-        : questions;
-      
+      const filteredQuestions =
+        categoryId !== "mixed"
+          ? questions.filter((q) => q.category === categoryId)
+          : questions;
+
       const maxQuestions = Math.min(20, filteredQuestions.length);
       const shuffled = shuffleArray(filteredQuestions);
       const newQuestions = shuffled.slice(0, maxQuestions);
-      
+
       // Создаем новую сессию
-      const newSessionId = generateTestSessionId(categoryId, studentData?.studentId || 'guest');
+      const newSessionId = generateTestSessionId(
+        categoryId,
+        studentData?.studentId || "guest"
+      );
       localStorage.setItem(`test_session_${categoryId}`, newSessionId);
-      localStorage.setItem(newSessionId, JSON.stringify({
-        studentId: studentData?.studentId || 'guest',
-        category: categoryId,
-        questions: newQuestions,
-        answers: {},
-        currentIndex: 0,
-        createdAt: new Date().toISOString()
-      }));
-      
+      localStorage.setItem(
+        newSessionId,
+        JSON.stringify({
+          studentId: studentData?.studentId || "guest",
+          category: categoryId,
+          questions: newQuestions,
+          answers: {},
+          currentIndex: 0,
+          createdAt: new Date().toISOString(),
+        })
+      );
+
       setTestQuestions(newQuestions);
       setTestSessionId(newSessionId);
     }
@@ -352,8 +401,8 @@ export const StudentTestPage = () => {
   // Вычисляемые данные для текущего экрана
   const currentQuestion = testQuestions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === testQuestions.length - 1;
-  const progressPercentage = testQuestions.length 
-    ? ((currentQuestionIndex + 1) / testQuestions.length) * 100 
+  const progressPercentage = testQuestions.length
+    ? ((currentQuestionIndex + 1) / testQuestions.length) * 100
     : 0;
 
   // Названия категорий для отображения
@@ -362,57 +411,61 @@ export const StudentTestPage = () => {
     javascript: "JavaScript",
     react: "React/Redux",
     typescript: "TypeScript",
-    mixed: "Смешанный тест"
+    mixed: "Смешанный тест",
   };
 
-  if (loading || questionsLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="flex flex-col items-center animate-pulse gap-4">
-        <HelpCircle className="w-12 h-12 text-blue-400" />
-        <p className="text-gray-600 font-medium">Загрузка вопросов...</p>
+  if (loading || questionsLoading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center animate-pulse gap-4">
+          <HelpCircle className="w-12 h-12 text-blue-400" />
+          <p className="text-gray-600 font-medium">Загрузка вопросов...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  if (error) return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
-        <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-        <h2 className="text-xl font-bold mb-4">{error}</h2>
-        <button 
-          onClick={() => navigate("/")} 
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-        >
-          На главную
-        </button>
+  if (error)
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-xl text-center max-w-md">
+          <AlertTriangle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-4">{error}</h2>
+          <button
+            onClick={() => navigate("/")}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+          >
+            На главную
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  if (isSubmitting) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center">
-        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4" />
-        <h2 className="text-xl font-bold">Сохранение результатов...</h2>
+  if (isSubmitting)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4" />
+          <h2 className="text-xl font-bold">Сохранение результатов...</h2>
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  if (!currentQuestion) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
-        <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-        <h2 className="text-xl font-bold mb-2">Тест не загружен</h2>
-        <p className="text-gray-600 mb-6">Попробуйте обновить страницу</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-        >
-          Обновить
-        </button>
+  if (!currentQuestion)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
+          <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">Тест не загружен</h2>
+          <p className="text-gray-600 mb-6">Попробуйте обновить страницу</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Обновить
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 pb-10 flex flex-col">
@@ -421,7 +474,8 @@ export const StudentTestPage = () => {
           <div className="flex justify-between items-center mb-2">
             <div>
               <h1 className="text-lg font-bold text-gray-800">
-                {categoryNames[categoryId] || "Тест"} | {testQuestions.length} вопросов
+                {categoryNames[categoryId] || "Тест"} | {testQuestions.length}{" "}
+                вопросов
               </h1>
               <p className="text-sm text-gray-500">
                 Вопрос {currentQuestionIndex + 1} из {testQuestions.length}
@@ -437,17 +491,21 @@ export const StudentTestPage = () => {
                 <Shuffle className="w-4 h-4" />
                 Новый тест
               </button>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                status === 'started' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-              }`}>
-                {status === 'started' ? '● АКТИВЕН' : '● ЗАВЕРШЕНИЕ...'}
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold ${
+                  status === "started"
+                    ? "bg-green-100 text-green-700"
+                    : "bg-orange-100 text-orange-700"
+                }`}
+              >
+                {status === "started" ? "● АКТИВЕН" : "● ЗАВЕРШЕНИЕ..."}
               </span>
             </div>
           </div>
           <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-blue-600 transition-all duration-300 ease-out" 
-              style={{ width: `${progressPercentage}%` }} 
+            <div
+              className="h-full bg-blue-600 transition-all duration-300 ease-out"
+              style={{ width: `${progressPercentage}%` }}
             />
           </div>
         </div>
@@ -458,22 +516,26 @@ export const StudentTestPage = () => {
           <div className="p-6 sm:p-8">
             {/* Индикатор сложности */}
             <div className="mb-4 flex justify-between items-center">
-              <span className={`text-xs font-medium px-3 py-1 rounded-full ${
-                currentQuestion.difficulty === 'легкий' ? 'bg-green-100 text-green-700' :
-                currentQuestion.difficulty === 'средний' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-red-100 text-red-700'
-              }`}>
-                {currentQuestion.difficulty || 'средний'}
+              <span
+                className={`text-xs font-medium px-3 py-1 rounded-full ${
+                  currentQuestion.difficulty === "легкий"
+                    ? "bg-green-100 text-green-700"
+                    : currentQuestion.difficulty === "средний"
+                    ? "bg-yellow-100 text-yellow-700"
+                    : "bg-red-100 text-red-700"
+                }`}
+              >
+                {currentQuestion.difficulty || "средний"}
               </span>
               <span className="text-sm text-gray-500">
                 Ответов: {Object.keys(answers).length}/{testQuestions.length}
               </span>
             </div>
-            
+
             <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-8 leading-relaxed">
               {currentQuestion.question}
             </h2>
-            
+
             <div className="space-y-3">
               {currentQuestion.options.map((option, index) => {
                 const isSelected = answers[currentQuestion.id] === index;
@@ -481,21 +543,37 @@ export const StudentTestPage = () => {
                   <label
                     key={index}
                     className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                      isSelected ? "border-blue-500 bg-blue-50 shadow-md" : "border-gray-200 hover:bg-gray-50"
+                      isSelected
+                        ? "border-blue-500 bg-blue-50 shadow-md"
+                        : "border-gray-200 hover:bg-gray-50"
                     }`}
                   >
                     <input
                       type="radio"
                       className="hidden"
                       checked={isSelected}
-                      onChange={() => handleSelectOption(currentQuestion.id, index)}
+                      onChange={() =>
+                        handleSelectOption(currentQuestion.id, index)
+                      }
                     />
-                    <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 mt-0.5 mr-4 flex items-center justify-center ${
-                      isSelected ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
-                    }`}>
-                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                    <div
+                      className={`flex-shrink-0 w-6 h-6 rounded-full border-2 mt-0.5 mr-4 flex items-center justify-center ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-500"
+                          : "border-gray-300"
+                      }`}
+                    >
+                      {isSelected && (
+                        <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                      )}
                     </div>
-                    <span className={`text-base sm:text-lg ${isSelected ? 'text-blue-800 font-medium' : 'text-gray-700'}`}>
+                    <span
+                      className={`text-base sm:text-lg ${
+                        isSelected
+                          ? "text-blue-800 font-medium"
+                          : "text-gray-700"
+                      }`}
+                    >
                       {option}
                     </span>
                   </label>
@@ -510,8 +588,8 @@ export const StudentTestPage = () => {
                 onClick={handlePrev}
                 disabled={currentQuestionIndex === 0}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium ${
-                  currentQuestionIndex === 0 
-                    ? "text-gray-400 cursor-not-allowed" 
+                  currentQuestionIndex === 0
+                    ? "text-gray-400 cursor-not-allowed"
                     : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
@@ -527,7 +605,7 @@ export const StudentTestPage = () => {
                     Следующий <ChevronRight className="w-5 h-5" />
                   </button>
                 )}
-                
+
                 <button
                   onClick={handleManualSubmit}
                   className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 shadow-lg"
@@ -536,15 +614,18 @@ export const StudentTestPage = () => {
                 </button>
               </div>
             </div>
-            
+
             {/* Навигация по вопросам */}
             <div className="mt-6 pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">Навигация по вопросам:</p>
+              <p className="text-sm text-gray-600 mb-2">
+                Навигация по вопросам:
+              </p>
               <div className="flex flex-wrap gap-2">
                 {testQuestions.map((_, index) => {
-                  const isAnswered = answers[testQuestions[index].id] !== undefined;
+                  const isAnswered =
+                    answers[testQuestions[index].id] !== undefined;
                   const isCurrent = index === currentQuestionIndex;
-                  
+
                   return (
                     <button
                       key={index}
@@ -553,11 +634,11 @@ export const StudentTestPage = () => {
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
                       className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
-                        isCurrent 
-                          ? 'bg-blue-600 text-white ring-2 ring-blue-300' 
-                          : isAnswered 
-                            ? 'bg-green-100 text-green-700 border border-green-200' 
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        isCurrent
+                          ? "bg-blue-600 text-white ring-2 ring-blue-300"
+                          : isAnswered
+                          ? "bg-green-100 text-green-700 border border-green-200"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                       }`}
                     >
                       {index + 1}
@@ -573,9 +654,18 @@ export const StudentTestPage = () => {
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-gray-700">
           <p className="font-medium mb-1">📝 Информация о тесте:</p>
           <ul className="space-y-1">
-            <li>• Категория: <span className="font-medium">{categoryNames[categoryId]}</span></li>
-            <li>• Всего вопросов: <span className="font-medium">{testQuestions.length}</span></li>
-            <li>• Ответов сохранено: <span className="font-medium">{Object.keys(answers).length}</span></li>
+            <li>
+              • Категория:{" "}
+              <span className="font-medium">{categoryNames[categoryId]}</span>
+            </li>
+            <li>
+              • Всего вопросов:{" "}
+              <span className="font-medium">{testQuestions.length}</span>
+            </li>
+            <li>
+              • Ответов сохранено:{" "}
+              <span className="font-medium">{Object.keys(answers).length}</span>
+            </li>
             <li>• Прогресс автоматически сохраняется</li>
           </ul>
         </div>

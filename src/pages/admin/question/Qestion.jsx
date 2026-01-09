@@ -373,6 +373,7 @@ export const QuestionsPage = () => {
                                 {opt}
                               </span>
                             ))}
+                          
                           </div>
                         </div>
                       </div>
