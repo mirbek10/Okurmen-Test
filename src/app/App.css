@@ -1,2 +1,6 @@
 
 @import "tailwindcss";
+
+button, input[type="submit"] , a, button:hover, input[type="submit"]:hover, a:hover{
+    cursor: pointer;
+}
