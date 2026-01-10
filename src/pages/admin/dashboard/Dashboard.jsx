@@ -151,22 +151,17 @@ export function Dashboard() {
 
     try {
       await start(testSettings);
-      // Перенаправление происходит в useEffect ниже
+      setTimeout(() => {
+        console.log(res);
+        
+        navigate(`/admin/test-monitor/${res.id}`);
+      }, 2000)
     } catch (error) {
       console.error(error);
       setError("Произошла ошибка при запуске теста");
     }
   };
 
-  // Перенаправление после успешного создания теста
-  const hasRun = useRef(false);
-
-  useEffect(() => {
-    if (!hasRun.current && res?.id && navigate) {
-      hasRun.current = true; // помечаем, что эффект уже отработал
-      navigate(`/admin/test-monitor/${res.id}`);
-    }
-  }, [res, navigate]);
 
   const handleCloseModal = () => {
     setShowSettingsModal(false);
@@ -445,7 +440,7 @@ export function Dashboard() {
                       Название группы
                     </label>
                     <input
-                      placeholder="Например: ПИ-21-1"
+                      placeholder="Например: A-10"
                       type="text"
                       value={group}
                       onChange={(e) => setGroup(e.target.value)}
@@ -479,18 +474,16 @@ export function Dashboard() {
                       onChange={(e) => {
                         const value = Math.min(
                           100,
-                          Math.max(1, parseInt(e.target.value) || 1)
+                          Math.max(1, parseInt(e.target.value))
                         );
                         setMaxStudents(value);
                       }}
-                      min="1"
+                      placeholder="Максимум 100 учеников"
                       max="100"
                       className="w-full border-2 border-gray-300 rounded-lg p-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Максимум: 100 учеников
-                  </p>
+                  
                 </div>
 
                 {/* Длительность теста */}
@@ -505,18 +498,16 @@ export function Dashboard() {
                       onChange={(e) => {
                         const value = Math.min(
                           180,
-                          Math.max(1, parseInt(e.target.value) || 1)
+                          Math.max(1, parseInt(e.target.value))
                         );
                         setDuration(value);
                       }}
-                      min="1"
+                      placeholder="От 1 до 180 минут"
                       max="180"
                       className="w-full border-2 border-gray-300 rounded-lg p-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    От 1 до 180 минут
-                  </p>
+                
                 </div>
 
                 {/* Предпросмотр настроек */}
