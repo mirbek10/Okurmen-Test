@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminPreviewStore } from "@/app/stores/admin/adminPreview";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
@@ -9,7 +9,9 @@ export function Dashboard() {
     loading: previewLoading,
     error: previewError,
     start,
+    clearRes, // ⬅️ ДОБАВИТЬ ЭТОТ МЕТОД В STORE
   } = useAdminPreviewStore();
+  
   const {
     questions,
     total,
@@ -25,12 +27,22 @@ export function Dashboard() {
   const [teacher, setTeacher] = useState("");
   const [error, setError] = useState("");
   const [tests, setTests] = useState([]);
+  const [isCreatingTest, setIsCreatingTest] = useState(false); // ⬅️ новый стейт
 
   const navigate = useNavigate();
+  const redirectRef = useRef(false); // ⬅️ используем ref вместо hasRun
 
   // Загружаем вопросы при монтировании
   useEffect(() => {
     fetchQuestions();
+    
+    // Очищаем состояние при монтировании компонента
+    return () => {
+      if (redirectRef.current) {
+        // Если был редирект, очищаем res при размонтировании
+        clearRes();
+      }
+    };
   }, [fetchQuestions]);
 
   // Создаем тесты на основе полученных вопросов
@@ -40,10 +52,9 @@ export function Dashboard() {
     }
   }, [questions]);
 
-  const createTestsFromQuestions = () => {
+  const createTestsFromQuestions = useCallback(() => {
     if (questions.length === 0) return;
 
-    // Считаем вопросы по категориям
     const categoryCounts = {
       html: 0,
       javascript: 0,
@@ -57,7 +68,6 @@ export function Dashboard() {
       }
     });
 
-    // Создаем тесты
     const availableTests = [
       {
         id: "html",
@@ -97,7 +107,6 @@ export function Dashboard() {
       },
     ];
 
-    // Добавляем смешанный тест, если есть хотя бы по 5 вопросов в каждой категории
     const hasEnoughQuestions =
       categoryCounts.html >= 5 &&
       categoryCounts.javascript >= 5 &&
@@ -108,37 +117,67 @@ export function Dashboard() {
       availableTests.push({
         id: "mixed",
         name: "Смешанный тест",
-        description:
-          "Тестирование по всем категориям (по 5 вопросов из каждой)",
-        questionsCount: 20, // 5 * 4 категории
+        description: "Тестирование по всем категориям (по 5 вопросов из каждой)",
+        questionsCount: 20,
         category: "mixed",
         difficulty: "mixed",
         icon: "🌈",
       });
     }
 
-    // Показываем только тесты с вопросами
     const filteredTests = availableTests.filter(
       (test) => test.questionsCount > 0
     );
     setTests(filteredTests);
-  };
+  }, [questions]);
+
+  // Обработка редиректа после успешного создания теста
+  useEffect(() => {
+    // Проверяем, что:
+    // 1. Есть результат (res)
+    // 2. Мы в процессе создания теста (isCreatingTest)
+    // 3. Редирект еще не был выполнен
+    if (res?.id && isCreatingTest && !redirectRef.current) {
+      redirectRef.current = true; // Устанавливаем флаг редиректа
+      
+      // Навигация с небольшей задержкой для плавности
+      setTimeout(() => {
+        navigate(`/admin/test-monitor/${res.id}`);
+        
+        // Сбрасываем состояния
+        setIsCreatingTest(false);
+        setShowSettingsModal(false);
+        setSelectedTest(null);
+        
+        // Очищаем форму
+        setGroup("");
+        setTeacher("");
+        setError("");
+        
+        // Очищаем результат в сторе
+        clearRes();
+      }, 100);
+    }
+  }, [res, isCreatingTest, navigate, clearRes]);
 
   const handleSelectTest = (test) => {
     setSelectedTest(test);
     setShowSettingsModal(true);
+    setError(""); // Очищаем ошибки при открытии модалки
   };
 
   const handleStartTest = async () => {
     if (!selectedTest) return;
 
-    // Валидация полей
     if (!group.trim() || !teacher.trim()) {
       setError("Пожалуйста, заполните все поля");
       return;
     }
 
-    // Подготовка настроек теста
+    // Сбрасываем флаг редиректа перед началом
+    redirectRef.current = false;
+    setIsCreatingTest(true);
+
     const testSettings = {
       category: selectedTest.category,
       group: group.trim(),
@@ -151,17 +190,12 @@ export function Dashboard() {
 
     try {
       await start(testSettings);
-      setTimeout(() => {
-        console.log(res);
-        
-        navigate(`/admin/test-monitor/${res.id}`);
-      }, 2000)
     } catch (error) {
       console.error(error);
       setError("Произошла ошибка при запуске теста");
+      setIsCreatingTest(false); // Сбрасываем флаг при ошибке
     }
   };
-
 
   const handleCloseModal = () => {
     setShowSettingsModal(false);
@@ -171,6 +205,7 @@ export function Dashboard() {
     setGroup("");
     setTeacher("");
     setError("");
+    setIsCreatingTest(false); // ⬅️ Сбрасываем флаг создания
   };
 
   // Обработчик нажатия клавиши Esc для закрытия модального окна
@@ -182,12 +217,10 @@ export function Dashboard() {
     };
 
     window.addEventListener("keydown", handleEscKey);
-
     return () => {
       window.removeEventListener("keydown", handleEscKey);
     };
   }, [showSettingsModal]);
-
   // Статистика по всем вопросам
   const getStats = () => {
     const stats = {
