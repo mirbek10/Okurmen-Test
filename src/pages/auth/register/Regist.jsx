@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 // Импортируем ваши сторы (замените на ваши реальные пути)
 import { useAdminLoginStore } from "@/app/stores/admin/adminLogin";
 import { useUserJoinStore } from "@/app/stores/user/userJoin";
+import Cookies from "js-cookie";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -69,6 +70,14 @@ const Register = () => {
       handleRegister(e);
     }
   };
+
+  const adminToken = Cookies.get("adminToken");
+  useEffect(() => {
+    if (adminToken) {
+      navigate("/admin/dashboard");
+    }
+  }, [adminToken, navigate]);
+
 
   // Определяем общее состояние загрузки и ошибки
   const loading = adminLoading || userLoading;

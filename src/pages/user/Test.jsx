@@ -12,6 +12,7 @@ import {
 import { useSetAnswere } from "@/app/stores/user/setAnswer";
 import { useTestStatus } from "@/app/stores/user/getTestStatus";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
+import FocusGuard from "@/shared/lib/focusGuard/FocusGuard";
 
 // Функция для перемешивания массива (алгоритм Фишера-Йетса)
 const shuffleArray = (array) => {
@@ -136,8 +137,7 @@ export const StudentTestPage = () => {
         setAnswers(savedSessionData.answers || {});
         setCurrentQuestionIndex(savedSessionData.currentIndex || 0);
       } else {
-        // Создаем новую сессию
-        // Ограничиваем максимум 20 вопросов
+        
         const maxQuestions = Math.min(20, filteredQuestions.length);
 
         // Перемешиваем вопросы
@@ -348,11 +348,6 @@ export const StudentTestPage = () => {
   const regenerateTest = () => {
     if (!testQuestions.length || isSubmitting) return;
 
-    if (
-      window.confirm(
-        "Вы уверены? Это создаст новый тест с другими вопросами. Текущие ответы будут потеряны."
-      )
-    ) {
       // Очищаем сохраненную сессию
       localStorage.removeItem(`test_session_${categoryId}`);
       if (testSessionId) {
@@ -395,7 +390,7 @@ export const StudentTestPage = () => {
 
       setTestQuestions(newQuestions);
       setTestSessionId(newSessionId);
-    }
+    
   };
 
   // Вычисляемые данные для текущего экрана
@@ -468,6 +463,8 @@ export const StudentTestPage = () => {
     );
 
   return (
+    <>
+    <FocusGuard reload={regenerateTest}/>
     <div className="min-h-screen bg-gray-50 pb-10 flex flex-col">
       <header className="bg-white shadow-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -482,7 +479,7 @@ export const StudentTestPage = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <button
+              {/* <button
                 onClick={regenerateTest}
                 disabled={isSubmitting}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50"
@@ -490,7 +487,7 @@ export const StudentTestPage = () => {
               >
                 <Shuffle className="w-4 h-4" />
                 Новый тест
-              </button>
+              </button> */}
               <span
                 className={`px-3 py-1 rounded-full text-xs font-bold ${
                   status === "started"
@@ -671,5 +668,7 @@ export const StudentTestPage = () => {
         </div>
       </main>
     </div>
+    </>
+
   );
 };

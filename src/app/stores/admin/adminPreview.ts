@@ -12,6 +12,7 @@ type useAdminPreviewStore = {
     error: string | null;
     res: any;
     start: (data: adminData) => void;
+    clearRes: () => void
 }
 
 export const useAdminPreviewStore = create<useAdminPreviewStore>((set, get) => ({
@@ -31,5 +32,6 @@ export const useAdminPreviewStore = create<useAdminPreviewStore>((set, get) => (
         } finally {
             set({ loading: false });
         }
-    }
+    },
+      clearRes: () => set({ res: null }),
 }))

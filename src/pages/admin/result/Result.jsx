@@ -11,11 +11,14 @@ import {
   Check,
   CircleX,
 } from "lucide-react";
+import { HiOutlineDotsVertical } from "react-icons/hi";
+import { Link } from "react-router-dom";
 
 function Result() {
   const { tests, loading, error, getTests } = useAdminGetTestStore();
   // Состояние для модалки
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedTest, setSelectedTest] = useState(null);
 
   useEffect(() => {
     getTests();
@@ -53,6 +56,11 @@ function Result() {
       averageScore: averageScore.toFixed(1),
     };
   }, [tests]);
+
+  const handleViewTestDetails = (test) => {
+    setSelectedTest(test);
+    setSelectedStudent(null);
+  };
 
   if (loading && !tests) {
     return (
@@ -117,7 +125,7 @@ function Result() {
         {tests?.map((test) => (
           <div
             key={test.id}
-            className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+            className="bg-white rounded-2xl shadow-sm border border-slate-200 relative"
           >
             <div className="bg-slate-50 border-b border-slate-200 p-6 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -133,20 +141,96 @@ function Result() {
                   </p>
                 </div>
               </div>
-                <div className="text-center flex flex-col">
-                  <p className="text-slate-400 uppercase text-[10px] font-bold">
-                    Статус
-                  </p>
+              <div className="text-center flex flex-col">
+                <p className="text-slate-400 uppercase text-[10px] font-bold">
+                  Статус
+                </p>
+                <span
+                  className={`font-bold ${
+                    test.finishedAt ? "text-green-500" : "text-yellow-500"
+                  }`}
+                >
+                  {test.finishedAt ? "Завершен" : "В процессе"}
+                </span>
+              </div>
+              <button
+                onClick={() =>{
 
-                  <span
-                    className={`font-bold ${
-                      test.finishedAt ? "text-green-500" : "text-yellow-500"
-                    }`}
-                  >
-                    {test.finishedAt ? "Завершен" : "В процессе"}
-                  </span>
-                </div>
+                  setSelectedTest(selectedTest?.id === test.id ? null : test);
+                }
+                }
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <HiOutlineDotsVertical />
+              </button>
             </div>
+
+            {/* Окно просмотра теста */}
+            {selectedTest && selectedTest.id === test.id && (
+              <>
+              <div className="absolute top-[60px] right-4 bg-white rounded-lg shadow-lg border border-slate-200 z-50 h-full w-64 overflow-y-scroll scrollbar-none">
+                <div className="p-4 border-b border-slate-100">
+                  <h3 className="font-bold text-slate-700">
+                    Информация о тесте
+                  </h3>
+                </div>
+                <div className="p-4 space-y-3">
+                  {/* <div>
+                    <p className="text-xs text-slate-500 uppercase font-bold">
+                      Дисциплина
+                    </p>
+                    <p className="font-medium">
+                      {test.subject || "Не указано"}
+                    </p>
+                  </div> */}
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-bold">
+                      Дата создания
+                    </p>
+                    <p className="font-medium">
+                      {new Date(test.startedAt).toLocaleString("ru-RU")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-bold">
+                      Дата завершения
+                    </p>
+                    <p className="font-medium">
+                      {test.finishedAt
+                        ? new Date(test.finishedAt).toLocaleDateString()
+                        : "Не завершен"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500 uppercase font-bold">
+                      Студентов прошло
+                    </p>
+                    <p className="font-medium">
+                      {test.students?.filter((s) => s.status === "finished")
+                        .length || 0}{" "}
+                      / {test.students?.length || 0}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 border-t border-slate-100 flex gap-2">
+                  <button
+                    className="flex-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <Link to={`/admin/test-monitor/${test.id}`}>
+                      Подробнее
+                    </Link>
+                  </button>
+                  <button
+                    onClick={() => setSelectedTest(null)}
+                    className="flex-1 bg-slate-50 text-slate-600 hover:bg-slate-100 py-2 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Закрыть
+                  </button>
+                </div>
+              </div>
+              <div onClick={() => setSelectedTest(null)} className="fixed inset-0 z-40"></div>
+              </>
+            )}
 
             <div className="overflow-x-auto">
               <table className="w-full text-left">
