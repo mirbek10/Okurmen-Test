@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Clock, AlertCircle, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUserGetStatus } from "@/app/stores/user/userGetStatus";
+import { toast } from "react-toastify";
 
 export const WaitingList = () => {
   const navigate = useNavigate();
@@ -89,7 +90,7 @@ export const WaitingList = () => {
 
       if (isNotFoundError) {
         // Показываем уведомление пользователю
-        alert('Вы были удалены из теста или студент не найден. Вы будете перенаправлены на страницу входа.');
+        toast.error('Вы были удалены из теста или студент не найден. Вы будете перенаправлены на страницу входа.');
         
         // Очищаем localStorage
         localStorage.removeItem("user");

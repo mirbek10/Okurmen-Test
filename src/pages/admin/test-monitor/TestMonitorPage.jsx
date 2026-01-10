@@ -7,6 +7,8 @@ import { useAdminStartStore } from "@/app/stores/admin/startTest";
 import { useAdminFinishTestStore } from "@/app/stores/admin/adminFinishTest";
 import { useAdminDeleteStudentStore } from "@/app/stores/admin/adminDeleteStudent";
 import { StudentAnswersModal } from "./ui/StudentAnswersModal"; // Импортируем новый компонент
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const categoryNames = {
   html: "HTML/CSS",
@@ -23,7 +25,7 @@ export default function TestMonitorPage() {
   const [timerStarted, setTimerStarted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null); // Для модалки
-  
+
   // Получаем данные из Zustand
   const { getTestById, loading, error, test } = useTestStore();
   const {
@@ -101,7 +103,7 @@ export default function TestMonitorPage() {
   // Начать тест для всех учеников
   const handleStartTest = async () => {
     if (!test || test.students.length === 0) {
-      alert("Нет подключённых учеников!");
+      toast.error("Нет учеников в тесте");
       return;
     }
     const testId = test.id;
@@ -110,11 +112,32 @@ export default function TestMonitorPage() {
   };
 
   // Завершить тест
-  const handleEndTest = () => {
+  const handleEndTest = async (isButton) => {
+    if (isButton) {
+      const result = await Swal.fire({
+        title: "Завершить тест?",
+        text: "Вы уверены, что хотите закончить тест прямо сейчас?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Да, завершить",
+        cancelButtonText: "Отмена",
+        reverseButtons: true,
+      });
+
+      if (!result.isConfirmed) {
+        return; // Пользователь нажал отмену
+      }
+
+      toast.success("Тест завершен");
+    }
+
     setTimerStarted(false);
     setTimeRemaining(0);
     finish(test.id);
-    getTestById(test.id);
+
+    setTimeout(() => {
+      getTestById(testId);
+    }, 1000);
   };
 
   const handleRefresh = async () => {
@@ -127,11 +150,22 @@ export default function TestMonitorPage() {
   };
 
   // Удалить ученика
+
   const handleDisconnect = async (studentId) => {
-    if (confirm("Вы уверены, что хотите удалить этого ученика?")) {
+    const result = await Swal.fire({
+      title: "Удалить ученика?",
+      text: "Это действие нельзя будет отменить.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Удалить",
+      cancelButtonText: "Отмена",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
       await deleteStudent({
         testId: test.id,
-        studentId: studentId,
+        studentId,
       });
 
       await getTestById(test.id);
@@ -143,7 +177,7 @@ export default function TestMonitorPage() {
     setSelectedStudent({
       id: student.id,
       name: student.name,
-      testCode: test.code
+      testCode: test.code,
     });
   };
 
@@ -167,7 +201,7 @@ export default function TestMonitorPage() {
     test?.students.filter((s) => s.status === "waiting") || [];
   const activeStudent =
     test?.students.filter((s) => s.status === "active") || [];
-  const forceFinished = 
+  const forceFinished =
     test?.students.filter((s) => s.status === "force-finished") || [];
 
   if (loading && !test) {
@@ -271,7 +305,9 @@ export default function TestMonitorPage() {
             <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-md p-6 mb-6">
               <div className="flex items-center justify-between">
                 <div className="text-white">
-                  <h3 className="text-xl font-bold mb-1">Готовы начать тест?</h3>
+                  <h3 className="text-xl font-bold mb-1">
+                    Готовы начать тест?
+                  </h3>
                   <p className="text-green-100">
                     Подключено учеников: {test.students.length}
                   </p>
@@ -297,7 +333,9 @@ export default function TestMonitorPage() {
           {/* Ошибка старта */}
           {startError && (
             <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 mb-6">
-              <p className="text-red-600 font-semibold">Ошибка запуска теста:</p>
+              <p className="text-red-600 font-semibold">
+                Ошибка запуска теста:
+              </p>
               <p className="text-red-500 text-sm">{startError}</p>
             </div>
           )}
@@ -320,7 +358,7 @@ export default function TestMonitorPage() {
                   </p>
                 </div>
                 <button
-                  onClick={handleEndTest}
+                  onClick={()=>handleEndTest(true)}
                   className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all"
                 >
                   Завершить тест
@@ -469,7 +507,7 @@ export default function TestMonitorPage() {
                     ))}
                   </div>
                 )}
-                
+
                 {/* Принудительно завершили */}
                 {forceFinished.length > 0 && (
                   <div>

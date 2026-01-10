@@ -14,6 +14,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
+import { toast } from "react-toastify";
 
 export const QuestionsPage = () => {
   const { 
@@ -57,7 +58,7 @@ export const QuestionsPage = () => {
     if (!file) return;
     const success = await uploadXlsx(file);
     if (success) {
-      alert("Файл успешно загружен!");
+      toast.success("Вопросы успешно загружены!");
       setFile(null);
     }
   };

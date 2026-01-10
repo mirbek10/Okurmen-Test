@@ -13,6 +13,7 @@ import { useSetAnswere } from "@/app/stores/user/setAnswer";
 import { useTestStatus } from "@/app/stores/user/getTestStatus";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
 import FocusGuard from "@/shared/lib/focusGuard/FocusGuard";
+import { toast } from "react-toastify";
 
 // Функция для перемешивания массива (алгоритм Фишера-Йетса)
 const shuffleArray = (array) => {
@@ -137,7 +138,6 @@ export const StudentTestPage = () => {
         setAnswers(savedSessionData.answers || {});
         setCurrentQuestionIndex(savedSessionData.currentIndex || 0);
       } else {
-        
         const maxQuestions = Math.min(20, filteredQuestions.length);
 
         // Перемешиваем вопросы
@@ -263,11 +263,10 @@ export const StudentTestPage = () => {
           localStorage.removeItem(testSessionId);
         }
 
-        alert(
-          `Тест завершен! Вы ответили на ${
-            Object.keys(finalAnswers).length
-          } из ${testQuestions.length} вопросов.`
+        toast.success(
+          "Ваш результат успешно отправлен! Спасибо за прохождение теста."
         );
+
         localStorage.removeItem("code");
         navigate("/", { replace: true });
       } catch (err) {
@@ -330,16 +329,27 @@ export const StudentTestPage = () => {
     }
   };
 
-  const handleManualSubmit = () => {
+  const handleManualSubmit = async () => {
     const answeredCount = Object.keys(answers).length;
     const totalCount = testQuestions.length;
-    let confirmMessage = "Вы уверены, что хотите завершить тест?";
+
+    let message = "Вы уверены, что хотите завершить тест?";
 
     if (answeredCount < totalCount) {
-      confirmMessage = `Вы ответили на ${answeredCount} из ${totalCount} вопросов. Все равно завершить?`;
+      message = `Вы ответили на ${answeredCount} из ${totalCount} вопросов. Всё равно завершить?`;
     }
 
-    if (window.confirm(confirmMessage)) {
+    const result = await Swal.fire({
+      title: "Завершить тест?",
+      text: message,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Да, завершить",
+      cancelButtonText: "Отмена",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
       submitTest(answers);
     }
   };
@@ -348,49 +358,48 @@ export const StudentTestPage = () => {
   const regenerateTest = () => {
     if (!testQuestions.length || isSubmitting) return;
 
-      // Очищаем сохраненную сессию
-      localStorage.removeItem(`test_session_${categoryId}`);
-      if (testSessionId) {
-        localStorage.removeItem(testSessionId);
-      }
+    // Очищаем сохраненную сессию
+    localStorage.removeItem(`test_session_${categoryId}`);
+    if (testSessionId) {
+      localStorage.removeItem(testSessionId);
+    }
 
-      // Сбрасываем состояние
-      setTestQuestions([]);
-      setAnswers({});
-      setCurrentQuestionIndex(0);
-      setTestSessionId(null);
+    // Сбрасываем состояние
+    setTestQuestions([]);
+    setAnswers({});
+    setCurrentQuestionIndex(0);
+    setTestSessionId(null);
 
-      // Формируем новый тест
-      const filteredQuestions =
-        categoryId !== "mixed"
-          ? questions.filter((q) => q.category === categoryId)
-          : questions;
+    // Формируем новый тест
+    const filteredQuestions =
+      categoryId !== "mixed"
+        ? questions.filter((q) => q.category === categoryId)
+        : questions;
 
-      const maxQuestions = Math.min(20, filteredQuestions.length);
-      const shuffled = shuffleArray(filteredQuestions);
-      const newQuestions = shuffled.slice(0, maxQuestions);
+    const maxQuestions = Math.min(20, filteredQuestions.length);
+    const shuffled = shuffleArray(filteredQuestions);
+    const newQuestions = shuffled.slice(0, maxQuestions);
 
-      // Создаем новую сессию
-      const newSessionId = generateTestSessionId(
-        categoryId,
-        studentData?.studentId || "guest"
-      );
-      localStorage.setItem(`test_session_${categoryId}`, newSessionId);
-      localStorage.setItem(
-        newSessionId,
-        JSON.stringify({
-          studentId: studentData?.studentId || "guest",
-          category: categoryId,
-          questions: newQuestions,
-          answers: {},
-          currentIndex: 0,
-          createdAt: new Date().toISOString(),
-        })
-      );
+    // Создаем новую сессию
+    const newSessionId = generateTestSessionId(
+      categoryId,
+      studentData?.studentId || "guest"
+    );
+    localStorage.setItem(`test_session_${categoryId}`, newSessionId);
+    localStorage.setItem(
+      newSessionId,
+      JSON.stringify({
+        studentId: studentData?.studentId || "guest",
+        category: categoryId,
+        questions: newQuestions,
+        answers: {},
+        currentIndex: 0,
+        createdAt: new Date().toISOString(),
+      })
+    );
 
-      setTestQuestions(newQuestions);
-      setTestSessionId(newSessionId);
-    
+    setTestQuestions(newQuestions);
+    setTestSessionId(newSessionId);
   };
 
   // Вычисляемые данные для текущего экрана
@@ -464,22 +473,22 @@ export const StudentTestPage = () => {
 
   return (
     <>
-    <FocusGuard reload={regenerateTest}/>
-    <div className="min-h-screen bg-gray-50 pb-10 flex flex-col">
-      <header className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center mb-2">
-            <div>
-              <h1 className="text-lg font-bold text-gray-800">
-                {categoryNames[categoryId] || "Тест"} | {testQuestions.length}{" "}
-                вопросов
-              </h1>
-              <p className="text-sm text-gray-500">
-                Вопрос {currentQuestionIndex + 1} из {testQuestions.length}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* <button
+      <FocusGuard reload={regenerateTest} />
+      <div className="min-h-screen bg-gray-50 pb-10 flex flex-col">
+        <header className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex justify-between items-center mb-2">
+              <div>
+                <h1 className="text-lg font-bold text-gray-800">
+                  {categoryNames[categoryId] || "Тест"} | {testQuestions.length}{" "}
+                  вопросов
+                </h1>
+                <p className="text-sm text-gray-500">
+                  Вопрос {currentQuestionIndex + 1} из {testQuestions.length}
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* <button
                 onClick={regenerateTest}
                 disabled={isSubmitting}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50"
@@ -488,187 +497,188 @@ export const StudentTestPage = () => {
                 <Shuffle className="w-4 h-4" />
                 Новый тест
               </button> */}
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  status === "started"
-                    ? "bg-green-100 text-green-700"
-                    : "bg-orange-100 text-orange-700"
-                }`}
-              >
-                {status === "started" ? "● АКТИВЕН" : "● ЗАВЕРШЕНИЕ..."}
-              </span>
-            </div>
-          </div>
-          <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-600 transition-all duration-300 ease-out"
-              style={{ width: `${progressPercentage}%` }}
-            />
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-grow max-w-3xl w-full mx-auto px-4 py-8 sm:px-6">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
-          <div className="p-6 sm:p-8">
-            {/* Индикатор сложности */}
-            <div className="mb-4 flex justify-between items-center">
-              <span
-                className={`text-xs font-medium px-3 py-1 rounded-full ${
-                  currentQuestion.difficulty === "легкий"
-                    ? "bg-green-100 text-green-700"
-                    : currentQuestion.difficulty === "средний"
-                    ? "bg-yellow-100 text-yellow-700"
-                    : "bg-red-100 text-red-700"
-                }`}
-              >
-                {currentQuestion.difficulty || "средний"}
-              </span>
-              <span className="text-sm text-gray-500">
-                Ответов: {Object.keys(answers).length}/{testQuestions.length}
-              </span>
-            </div>
-
-            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-8 leading-relaxed">
-              {currentQuestion.question}
-            </h2>
-
-            <div className="space-y-3">
-              {currentQuestion.options.map((option, index) => {
-                const isSelected = answers[currentQuestion.id] === index;
-                return (
-                  <label
-                    key={index}
-                    className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                      isSelected
-                        ? "border-blue-500 bg-blue-50 shadow-md"
-                        : "border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      className="hidden"
-                      checked={isSelected}
-                      onChange={() =>
-                        handleSelectOption(currentQuestion.id, index)
-                      }
-                    />
-                    <div
-                      className={`flex-shrink-0 w-6 h-6 rounded-full border-2 mt-0.5 mr-4 flex items-center justify-center ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-500"
-                          : "border-gray-300"
-                      }`}
-                    >
-                      {isSelected && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-white" />
-                      )}
-                    </div>
-                    <span
-                      className={`text-base sm:text-lg ${
-                        isSelected
-                          ? "text-blue-800 font-medium"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {option}
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="bg-gray-50 p-4 sm:px-8 sm:py-6 border-t border-gray-100">
-            <div className="flex justify-between items-center">
-              <button
-                onClick={handlePrev}
-                disabled={currentQuestionIndex === 0}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium ${
-                  currentQuestionIndex === 0
-                    ? "text-gray-400 cursor-not-allowed"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <ChevronLeft className="w-5 h-5" /> Назад
-              </button>
-
-              <div className="flex items-center gap-3">
-                {!isLastQuestion && (
-                  <button
-                    onClick={handleNext}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow"
-                  >
-                    Следующий <ChevronRight className="w-5 h-5" />
-                  </button>
-                )}
-
-                <button
-                  onClick={handleManualSubmit}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 shadow-lg"
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    status === "started"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-orange-100 text-orange-700"
+                  }`}
                 >
-                  <CheckCircle className="w-5 h-5" /> Завершить тест
-                </button>
+                  {status === "started" ? "● АКТИВЕН" : "● ЗАВЕРШЕНИЕ..."}
+                </span>
               </div>
             </div>
+            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          </div>
+        </header>
 
-            {/* Навигация по вопросам */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-600 mb-2">
-                Навигация по вопросам:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {testQuestions.map((_, index) => {
-                  const isAnswered =
-                    answers[testQuestions[index].id] !== undefined;
-                  const isCurrent = index === currentQuestionIndex;
+        <main className="flex-grow max-w-3xl w-full mx-auto px-4 py-8 sm:px-6">
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
+            <div className="p-6 sm:p-8">
+              {/* Индикатор сложности */}
+              <div className="mb-4 flex justify-between items-center">
+                <span
+                  className={`text-xs font-medium px-3 py-1 rounded-full ${
+                    currentQuestion.difficulty === "легкий"
+                      ? "bg-green-100 text-green-700"
+                      : currentQuestion.difficulty === "средний"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {currentQuestion.difficulty || "средний"}
+                </span>
+                <span className="text-sm text-gray-500">
+                  Ответов: {Object.keys(answers).length}/{testQuestions.length}
+                </span>
+              </div>
 
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-8 leading-relaxed">
+                {currentQuestion.question}
+              </h2>
+
+              <div className="space-y-3">
+                {currentQuestion.options.map((option, index) => {
+                  const isSelected = answers[currentQuestion.id] === index;
                   return (
-                    <button
+                    <label
                       key={index}
-                      onClick={() => {
-                        setCurrentQuestionIndex(index);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
-                        isCurrent
-                          ? "bg-blue-600 text-white ring-2 ring-blue-300"
-                          : isAnswered
-                          ? "bg-green-100 text-green-700 border border-green-200"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      className={`flex items-start p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-50 shadow-md"
+                          : "border-gray-200 hover:bg-gray-50"
                       }`}
                     >
-                      {index + 1}
-                    </button>
+                      <input
+                        type="radio"
+                        className="hidden"
+                        checked={isSelected}
+                        onChange={() =>
+                          handleSelectOption(currentQuestion.id, index)
+                        }
+                      />
+                      <div
+                        className={`flex-shrink-0 w-6 h-6 rounded-full border-2 mt-0.5 mr-4 flex items-center justify-center ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-500"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {isSelected && (
+                          <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-base sm:text-lg ${
+                          isSelected
+                            ? "text-blue-800 font-medium"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {option}
+                      </span>
+                    </label>
                   );
                 })}
               </div>
             </div>
+
+            <div className="bg-gray-50 p-4 sm:px-8 sm:py-6 border-t border-gray-100">
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={handlePrev}
+                  disabled={currentQuestionIndex === 0}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium ${
+                    currentQuestionIndex === 0
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  <ChevronLeft className="w-5 h-5" /> Назад
+                </button>
+
+                <div className="flex items-center gap-3">
+                  {!isLastQuestion && (
+                    <button
+                      onClick={handleNext}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 shadow"
+                    >
+                      Следующий <ChevronRight className="w-5 h-5" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={handleManualSubmit}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 shadow-lg"
+                  >
+                    <CheckCircle className="w-5 h-5" /> Завершить тест
+                  </button>
+                </div>
+              </div>
+
+              {/* Навигация по вопросам */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600 mb-2">
+                  Навигация по вопросам:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {testQuestions.map((_, index) => {
+                    const isAnswered =
+                      answers[testQuestions[index].id] !== undefined;
+                    const isCurrent = index === currentQuestionIndex;
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setCurrentQuestionIndex(index);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-medium ${
+                          isCurrent
+                            ? "bg-blue-600 text-white ring-2 ring-blue-300"
+                            : isAnswered
+                            ? "bg-green-100 text-green-700 border border-green-200"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {/* Информация о тесте */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-gray-700">
-          <p className="font-medium mb-1">📝 Информация о тесте:</p>
-          <ul className="space-y-1">
-            <li>
-              • Категория:{" "}
-              <span className="font-medium">{categoryNames[categoryId]}</span>
-            </li>
-            <li>
-              • Всего вопросов:{" "}
-              <span className="font-medium">{testQuestions.length}</span>
-            </li>
-            <li>
-              • Ответов сохранено:{" "}
-              <span className="font-medium">{Object.keys(answers).length}</span>
-            </li>
-            <li>• Прогресс автоматически сохраняется</li>
-          </ul>
-        </div>
-      </main>
-    </div>
+          {/* Информация о тесте */}
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-gray-700">
+            <p className="font-medium mb-1">📝 Информация о тесте:</p>
+            <ul className="space-y-1">
+              <li>
+                • Категория:{" "}
+                <span className="font-medium">{categoryNames[categoryId]}</span>
+              </li>
+              <li>
+                • Всего вопросов:{" "}
+                <span className="font-medium">{testQuestions.length}</span>
+              </li>
+              <li>
+                • Ответов сохранено:{" "}
+                <span className="font-medium">
+                  {Object.keys(answers).length}
+                </span>
+              </li>
+              <li>• Прогресс автоматически сохраняется</li>
+            </ul>
+          </div>
+        </main>
+      </div>
     </>
-
   );
 };
