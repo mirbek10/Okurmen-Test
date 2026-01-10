@@ -7,7 +7,9 @@ function AdminLayout() {
   const nav = useNavigate();
   const token = Cookies.get("adminToken");
   useEffect(() => {
-    nav("/");
+    if (!token) {
+      nav("/");
+    }
   }, [token]);
   return (
     <div>
