@@ -9,6 +9,7 @@ import { useAdminDeleteStudentStore } from "@/app/stores/admin/adminDeleteStuden
 import { StudentAnswersModal } from "./ui/StudentAnswersModal"; // Импортируем новый компонент
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
+import { useAdminArchiveTestStore } from "@/app/stores/admin/adminArchiveTest";
 
 const categoryNames = {
   html: "HTML/CSS",
@@ -28,6 +29,7 @@ export default function TestMonitorPage() {
 
   // Получаем данные из Zustand
   const { getTestById, loading, error, test } = useTestStore();
+  const { archive, loading: archiveLoading } = useAdminArchiveTestStore();
   const {
     start,
     loading: startLoading,
@@ -138,6 +140,27 @@ export default function TestMonitorPage() {
     setTimeout(() => {
       getTestById(testId);
     }, 1000);
+  };
+
+  const handleArchiveResults = async () => {
+    const result = await Swal.fire({
+      title: "Сохранить в базу результатов?",
+      text: "Данные будут перенесены в облако и удалены из активного монитора.",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Сохранить",
+      confirmButtonColor: "#8b5cf6",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await archive({ id: test.id });
+        toast.success("Данные успешно заархивированы!");
+        // Можно сделать редирект: window.location.href = '/admin/results';
+      } catch (err) {
+        toast.error("Ошибка при сохранении");
+      }
+    }
   };
 
   const handleRefresh = async () => {
@@ -298,6 +321,43 @@ export default function TestMonitorPage() {
                 </p>
               </div>
             </div>
+            <div className="bg-white mt-6 p-6 rounded-xl shadow-sm mb-6 flex justify-between items-center border-l-8 border-indigo-500">
+              <div>
+                <h2 className="text-xl font-bold">Управление состоянием</h2>
+                <p className="text-gray-500 text-sm">
+                  Текущий статус:{" "}
+                  {test.started ? "🟢 Активен" : "🔴 Остановлен"}
+                </p>
+              </div>
+
+              <div className="flex gap-4">
+                {/* Кнопка Стоп - видна пока тест идет */}
+                {test.started && (
+                  <button
+                    onClick={handleEndTest}
+                    disabled={finishLoading}
+                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-bold transition-all"
+                  >
+                    {finishLoading ? "Завершение..." : "🛑 Остановить тест"}
+                  </button>
+                )}
+
+                {/* Кнопка Архив - видна ТОЛЬКО после остановки */}
+                {!test.started && (
+                  <button
+                    onClick={handleArchiveResults}
+                    disabled={archiveLoading}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-bold shadow-lg transition-all flex items-center gap-2"
+                  >
+                    {archiveLoading ? (
+                      <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                    ) : (
+                      "📦 Сохранить результаты в БД"
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Кнопка запуска теста */}
@@ -358,7 +418,7 @@ export default function TestMonitorPage() {
                   </p>
                 </div>
                 <button
-                  onClick={()=>handleEndTest(true)}
+                  onClick={() => handleEndTest(true)}
                   className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all"
                 >
                   Завершить тест
