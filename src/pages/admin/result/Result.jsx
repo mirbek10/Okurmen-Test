@@ -57,6 +57,10 @@ function Result() {
     };
   }, [tests]);
 
+  const handleDeleteTest = (testId) => {
+    // Обработка удаления теста
+  };
+
   const handleViewTestDetails = (test) => {
     setSelectedTest(test);
     setSelectedStudent(null);
@@ -220,11 +224,14 @@ function Result() {
                       Подробнее
                     </Link>
                   </button>
-                  <button
+                  {/* <button
                     onClick={() => setSelectedTest(null)}
                     className="flex-1 bg-slate-50 text-slate-600 hover:bg-slate-100 py-2 rounded-lg text-sm font-medium transition-colors"
                   >
                     Закрыть
+                  </button> */}
+                  <button onClick={() => handleDeleteTest(test.id)} className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-lg text-sm font-medium transition-colors">
+                     Удалить
                   </button>
                 </div>
               </div>

@@ -14,6 +14,7 @@ import { useTestStatus } from "@/app/stores/user/getTestStatus";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
 import FocusGuard from "@/shared/lib/focusGuard/FocusGuard";
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 // Функция для перемешивания массива (алгоритм Фишера-Йетса)
 const shuffleArray = (array) => {
