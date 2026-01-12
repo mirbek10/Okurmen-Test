@@ -93,10 +93,10 @@ export default function TestMonitorPage() {
     let interval;
 
     // Авто-обновление списка учеников каждые 5 секунд, если тест еще не запущен
-    if (test && !test.started) {
+    if (test ) {
       interval = setInterval(() => {
         getTestById(testId);
-      }, 15000);
+      }, 7000);
     }
 
     return () => clearInterval(interval);

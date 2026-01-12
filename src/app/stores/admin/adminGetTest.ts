@@ -17,21 +17,31 @@ export const useAdminGetTestStore = create<AdminGetTestState>((set) => ({
         try {
             set({ loading: true, error: null });
             const response = await axiosAdmin.get('/admin/results');
-            const tests = response.data;
-            set({ tests });
+            set({ tests: response.data });
         } catch (error) {
             set({ error: (error as Error).message });
         } finally {
             set({ loading: false });
         }
     },
-    deleteTest: async (id: number) => {
+    deleteTest: async (id: string | number) => { // id может быть и строкой (ObjectId)
         try {
             set({ loading: true, error: null });
+            
+            // Отправляем запрос на удаление
             const response = await axiosAdmin.delete(`/admin/tests/${id}`);
-            const tests = response.data;
-            set({ tests });
+            
+            if (response.data.success) {
+                // ОБНОВЛЯЕМ СОСТОЯНИЕ ПРАВИЛЬНО:
+                // Оставляем в массиве только те тесты, id которых НЕ совпадает с удаленным
+                set((state) => ({
+                    tests: state.tests.filter((test) => 
+                        test.id !== id && test._id !== id
+                    )
+                }));
+            }
         } catch (error) {
+            console.error("Ошибка при удалении:", error);
             set({ error: (error as Error).message });
         } finally {
             set({ loading: false });

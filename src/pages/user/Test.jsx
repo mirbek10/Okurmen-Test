@@ -269,7 +269,7 @@ export const StudentTestPage = () => {
         );
 
         localStorage.removeItem("code");
-        navigate("/", { replace: true });
+        window.location.href = "/";
       } catch (err) {
         console.error("Ошибка при отправке ответов:", err);
         setError("Ошибка при отправке результатов. Попробуйте еще раз.");
@@ -590,7 +590,7 @@ export const StudentTestPage = () => {
             </div>
 
             <div className="bg-gray-50 p-4 sm:px-8 sm:py-6 border-t border-gray-100">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center flex-wrap gap-3">
                 <button
                   onClick={handlePrev}
                   disabled={currentQuestionIndex === 0}
@@ -603,7 +603,7 @@ export const StudentTestPage = () => {
                   <ChevronLeft className="w-5 h-5" /> Назад
                 </button>
 
-                <div className="flex items-center gap-3">
+                {/* <div className="flex items-center gap-3 flex-wrap justify-end"> */}
                   {!isLastQuestion && (
                     <button
                       onClick={handleNext}
@@ -619,7 +619,7 @@ export const StudentTestPage = () => {
                   >
                     <CheckCircle className="w-5 h-5" /> Завершить тест
                   </button>
-                </div>
+                {/* </div> */}
               </div>
 
               {/* Навигация по вопросам */}
