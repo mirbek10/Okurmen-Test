@@ -15,7 +15,7 @@ import { HiOutlineDotsVertical } from "react-icons/hi";
 import { Link } from "react-router-dom";
 
 function Result() {
-  const { tests, loading, error, getTests } = useAdminGetTestStore();
+  const { tests, loading, error, getTests, deleteTest } = useAdminGetTestStore();
   // Состояние для модалки
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedTest, setSelectedTest] = useState(null);
@@ -58,7 +58,7 @@ function Result() {
   }, [tests]);
 
   const handleDeleteTest = (testId) => {
-    // Обработка удаления теста
+    deleteTest(testId);
   };
 
   const handleViewTestDetails = (test) => {
@@ -160,7 +160,7 @@ function Result() {
               <button
                 onClick={() =>{
 
-                  setSelectedTest(selectedTest?.id === test.id ? null : test);
+                  setSelectedTest(selectedTest?.code === test.code ? null : test);
                 }
                 }
                 className="text-slate-400 hover:text-slate-600"
@@ -170,7 +170,7 @@ function Result() {
             </div>
 
             {/* Окно просмотра теста */}
-            {selectedTest && selectedTest.id === test.id && (
+            {selectedTest && selectedTest.code === test.code && (
               <>
               <div className="absolute top-[60px] right-4 bg-white rounded-lg shadow-lg border border-slate-200 z-50 h-full w-64 overflow-y-scroll scrollbar-none">
                 <div className="p-4 border-b border-slate-100">
