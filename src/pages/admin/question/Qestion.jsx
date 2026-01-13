@@ -1,393 +1,223 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import {
-  FileUp,
-  Database,
-  FileText,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Filter,
-  ChevronDown,
+import { 
+  FileUp, Database, FileText, CheckCircle2, Loader2, 
+  Search, ChevronLeft, ChevronRight, Layers, LayoutGrid, Sparkles
 } from "lucide-react";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
 import { toast } from "react-toastify";
 
 export const QuestionsPage = () => {
   const { 
-    questions, 
-    loading, 
-    uploading, 
-    fetchQuestions, 
-    uploadXlsx,
-    total,
-    limit,
-    offset,
-    hasMore,
-    searchQuestions,
-    filterByCategory,
-    sortQuestions,
-    nextPage,
-    prevPage,
-    clearError
+    questions, loading, uploading, fetchQuestions, uploadXlsx,
+    total, totalPages, page, hasMore,
+    searchQuestions, filterByCategory, setPage 
   } = useQuestionStore();
-  
+
   const [file, setFile] = useState(null);
-  const [dragActive, setDragActive] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [sortField, setSortField] = useState("id");
-  const [sortOrder, setSortOrder] = useState("asc");
-  
+
   useEffect(() => {
     fetchQuestions();
-    return () => clearError();
-  }, [fetchQuestions, clearError]);
-
-  const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
+  }, []);
 
   const handleUpload = async () => {
     if (!file) return;
     const success = await uploadXlsx(file);
     if (success) {
-      toast.success("Вопросы успешно загружены!");
+      toast.success("База знаний обновлена!");
       setFile(null);
     }
   };
 
-  const handleSearch = (value) => {
-    setSearchTerm(value);
-    searchQuestions(value);
-  };
-
-  const handleCategoryChange = (category) => {
-    setCategoryFilter(category);
-    filterByCategory(category);
-  };
-
-  const handleSortChange = (field) => {
-    const newOrder = sortField === field && sortOrder === "asc" ? "desc" : "asc";
-    setSortField(field);
-    setSortOrder(newOrder);
-    sortQuestions(field, newOrder);
-  };
-
-  const handlePageChange = (direction) => {
-    if (direction === "next") {
-      nextPage();
-    } else {
-      prevPage();
-    }
-  };
-
-  const categories = [
-    { id: "", name: "Все категории" },
-    { id: "html", name: "HTML/CSS" },
-    { id: "javascript", name: "JavaScript" },
-    { id: "react", name: "React/Redux" },
-    { id: "typescript", name: "TypeScript" }
-  ];
-
-  const sortOptions = [
-    { id: "id", name: "По ID" },
-    { id: "question", name: "По вопросу" },
-    { id: "created", name: "По дате" }
-  ];
-
-  
-
-  // Функция для получения названия категории
-  const getCategoryName = (category) => {
-    const cat = categories.find(c => c.id === category);
-    return cat ? cat.name : category;
-  };
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Заголовок */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3">
-            <Database className="text-indigo-600" /> База вопросов
-          </h1>
-          <p className="text-slate-500 mt-2">
-            Загружайте новые тесты через XLSX или просматривайте существующие
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#F1F5F9] text-slate-900 font-sans selection:bg-indigo-100">
+      {/* Декоративный фон */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-indigo-200/40 blur-[120px]" />
+        <div className="absolute top-[60%] -right-[5%] w-[30%] h-[30%] rounded-full bg-violet-200/40 blur-[100px]" />
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Левая колонка: Загрузка */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-              <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <FileUp size={20} className="text-indigo-500" /> Загрузить XLSX
-              </h2>
+      <div className="relative z-10 max-w-7xl mx-auto p-4 md:p-8">
+        {/* Header */}
+        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="p-2 bg-indigo-600 rounded-lg text-white">
+                <Database size={20} />
+              </span>
+              <span className="text-sm font-bold text-indigo-600 uppercase tracking-widest">Admin Panel</span>
+            </div>
+            <h1 className="text-4xl font-black tracking-tight text-slate-900">
+              Управление <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">Вопросами</span>
+            </h1>
+          </div>
+          <div className="flex items-center gap-3 bg-white/60 backdrop-blur-md p-2 rounded-2xl border border-white shadow-sm">
+             <div className="px-4 py-2">
+                <p className="text-[10px] uppercase font-bold text-slate-400 leading-none mb-1">Всего записей</p>
+                <p className="text-xl font-black text-slate-800">{total.toLocaleString()}</p>
+             </div>
+          </div>
+        </header>
 
-              <label
-                className={`relative border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all cursor-pointer ${
-                  dragActive
-                    ? "border-indigo-500 bg-indigo-50"
-                    : "border-slate-200 hover:border-indigo-400"
-                }`}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragActive(true);
-                }}
-                onDragLeave={() => setDragActive(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragActive(false);
-                  if (e.dataTransfer.files[0]) {
-                    setFile(e.dataTransfer.files[0]);
-                  }
-                }}
-              >
-                <input
-                  type="file"
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Левая колонка - Инструменты */}
+          <div className="lg:col-span-4 space-y-6">
+            <section className="bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white shadow-xl shadow-slate-200/50">
+              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                <FileUp className="text-indigo-600" size={20}/> Загрузить данные
+              </h3>
+              
+              <div className="group relative">
+                <input 
+                  type="file" 
+                  id="file-upload"
+                  onChange={(e) => setFile(e.target.files[0])}
                   className="hidden"
-                  accept=".xlsx, .xls"
-                  onChange={handleFileChange}
                 />
-                <FileText
-                  className={`w-12 h-12 mb-3 ${
-                    file ? "text-indigo-600" : "text-slate-300"
-                  }`}
-                />
-                <p className="text-sm font-medium text-slate-600 text-center">
-                  {file ? file.name : "Нажмите или перетащите файл"}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-1 uppercase">
-                  Форматы: .xlsx, .xls
-                </p>
-              </label>
+                <label 
+                  htmlFor="file-upload"
+                  className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-[2rem] cursor-pointer transition-all
+                    ${file ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50'}`}
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    {file ? (
+                      <FileText className="w-10 h-10 mb-3 text-indigo-600 animate-bounce" />
+                    ) : (
+                      <Layers className="w-10 h-10 mb-3 text-slate-300 group-hover:text-indigo-400 transition-colors" />
+                    )}
+                    <p className="text-sm font-medium text-slate-600 px-4 text-center">
+                      {file ? file.name : "Перетащите Excel или кликните"}
+                    </p>
+                  </div>
+                </label>
+              </div>
 
               <button
                 disabled={!file || uploading}
                 onClick={handleUpload}
-                className="w-full mt-4 bg-indigo-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:bg-slate-400 hover:bg-indigo-700 transition-all"
+                className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:shadow-indigo-300 active:scale-[0.98] disabled:opacity-40 disabled:scale-100 transition-all flex justify-center items-center gap-2"
               >
-                {uploading ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <CheckCircle2 size={18} />
-                )}
-                {uploading ? "Загрузка..." : "Отправить на сервер"}
+                {uploading ? <Loader2 className="animate-spin" /> : <Sparkles size={18} />}
+                {uploading ? "Импорт..." : "Обновить базу данных"}
               </button>
-            </div>
-
-            <div className="bg-amber-50 p-4 rounded-2xl border border-amber-100">
-              <div className="flex gap-3">
-                <AlertCircle className="text-amber-600 shrink-0" size={20} />
-                <div className="text-xs text-amber-800 leading-relaxed">
-                  <strong>Новый формат файла:</strong>
-                  <br />
-                  <ul className="mt-1 space-y-1 list-disc pl-4">
-                    <li>Строки — разные вопросы</li>
-                    <li>Колонки A-D: HTML/CSS, JavaScript, React/Redux, TypeScript</li>
-                    <li>В ячейках — вопрос с вариантами ответов</li>
-                    <li>Правильный ответ помечается ✔ или (+)</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {/* Статистика */}
-            {questions.length > 0 && (
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <h3 className="text-lg font-bold text-slate-800 mb-4">
-                  Статистика
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Всего вопросов:</span>
-                    <span className="font-bold">{total}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">На странице:</span>
-                    <span className="font-bold">{questions.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-600">Страница:</span>
-                    <span className="font-bold">{Math.floor(offset / limit) + 1}</span>
-                  </div>
-                </div>
-              </div>
-            )}
+            </section>
           </div>
 
-          {/* Правая колонка: Список вопросов */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col h-[700px]">
-              {/* Панель управления */}
-              <div className="p-6 border-b border-slate-100 space-y-4">
-                {/* Поиск */}
-                <div className="relative">
-                  <Search
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Поиск по вопросам..."
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 border-none"
-                    value={searchTerm}
-                    onChange={(e) => handleSearch(e.target.value)}
-                  />
-                </div>
+          {/* Правая колонка - Контент */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Toolbar */}
+            <div className="bg-white/80 backdrop-blur-xl p-4 rounded-[2rem] border border-white shadow-lg shadow-slate-200/50 flex flex-col gap-4">
+              <div className="relative">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input
+                  className="w-full pl-14 pr-6 py-4 bg-slate-100/50 border border-transparent focus:border-indigo-300 focus:bg-white rounded-2xl outline-none transition-all placeholder:text-slate-400"
+                  placeholder="Найти вопрос..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      searchQuestions(e.target.value);
+                  }}
+                />
+              </div>
 
-                {/* Фильтры и сортировка */}
-                <div className="flex flex-wrap gap-3 items-center">
-                  <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-lg text-slate-700 hover:bg-slate-200 transition-all"
+              <div className="flex flex-wrap justify-between items-center gap-4 px-2">
+                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                  {['', 'html', 'javascript', 'react', 'python'].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => { setCategoryFilter(cat); filterByCategory(cat); }}
+                      className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all
+                        ${categoryFilter === cat 
+                          ? 'bg-slate-900 text-white shadow-lg' 
+                          : 'bg-white text-slate-500 hover:bg-indigo-50 border border-slate-100'}`}
+                    >
+                      {cat || 'Все'}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="flex items-center bg-slate-100 rounded-xl p-1">
+                  <button 
+                    disabled={page <= 1} 
+                    onClick={() => setPage(page - 1)} 
+                    className="p-2 hover:bg-white rounded-lg disabled:opacity-20 transition-all shadow-sm"
                   >
-                    <Filter size={16} />
-                    Фильтры
-                    <ChevronDown 
-                      size={16} 
-                      className={`transition-transform ${showFilters ? "rotate-180" : ""}`}
-                    />
+                    <ChevronLeft size={20}/>
                   </button>
-
-                  <div className="flex gap-2">
-                    {sortOptions.map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => handleSortChange(option.id)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                          sortField === option.id
-                            ? "bg-indigo-600 text-white"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        {option.name}
-                        {sortField === option.id && (
-                          <span className="ml-1">
-                            {sortOrder === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Выпадающие фильтры */}
-                {showFilters && (
-                  <div className="pt-4 border-t border-slate-100">
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          onClick={() => handleCategoryChange(cat.id)}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                            categoryFilter === cat.id
-                              ? "bg-indigo-100 text-indigo-700 border border-indigo-300"
-                              : "bg-white text-slate-600 border border-slate-200 hover:border-slate-300"
-                          }`}
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Пагинация */}
-                <div className="flex items-center justify-between pt-2">
-                  <div className="text-sm text-slate-500">
-                    Показано {questions.length} из {total}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handlePageChange("prev")}
-                      disabled={offset === 0}
-                      className="p-2 rounded-lg bg-slate-100 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-200 transition-all"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <div className="px-4 py-2 bg-slate-100 rounded-lg text-slate-700 font-medium">
-                      {Math.floor(offset / limit) + 1}
-                    </div>
-                    <button
-                      onClick={() => handlePageChange("next")}
-                      disabled={!hasMore}
-                      className="p-2 rounded-lg bg-slate-100 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-200 transition-all"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                  </div>
+                  <span className="px-4 text-xs font-bold text-slate-600">{page} / {totalPages}</span>
+                  <button 
+                    disabled={!hasMore} 
+                    onClick={() => setPage(page + 1)} 
+                    className="p-2 hover:bg-white rounded-lg disabled:opacity-20 transition-all shadow-sm"
+                  >
+                    <ChevronRight size={20}/>
+                  </button>
                 </div>
               </div>
+            </div>
 
-              {/* Список вопросов */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                    <Loader2 className="animate-spin mb-2" size={32} />
-                    <p>Загрузка базы вопросов...</p>
-                  </div>
-                ) : questions.length > 0 ? (
-                  questions.reverse().map((q, index) => (
-                    <div
-                      key={q.id || index}
-                      className="p-4 rounded-2xl border border-slate-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition-all group"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">
-                              Вопрос #{q.id}
-                            </span>
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                              q.category === 'html' ? 'bg-blue-100 text-blue-800' :
-                              q.category === 'javascript' ? 'bg-yellow-100 text-yellow-800' :
-                              q.category === 'react' ? 'bg-cyan-100 text-cyan-800' :
-                              q.category === 'typescript' ? 'bg-purple-100 text-purple-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {getCategoryName(q.category)}
-                            </span>
-                          </div>
-                          
-                          <h3 className="text-slate-800 font-semibold mt-1 leading-snug">
-                            {q.question}
-                          </h3>
-
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            {q.options?.map((opt, i) => (
-                              <span
-                                key={i}
-                                className={`text-xs px-3 py-1 rounded-lg border ${
-                                  opt === q.answer
-                                    ? "bg-green-100 border-green-200 text-green-700 font-bold"
-                                    : "bg-white border-slate-200 text-slate-500"
-                                }`}
-                              >
-                                {opt}
-                              </span>
-                            ))}
-                          
-                          </div>
-                        </div>
-                      </div>
+            {/* Список вопросов */}
+            <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2 no-scrollbar">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center py-32 gap-4">
+                   <div className="relative">
+                      <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                      <LayoutGrid className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600" size={20} />
+                   </div>
+                   <p className="font-bold text-slate-400 animate-pulse">Загрузка базы...</p>
+                </div>
+              ) : questions.length > 0 ? (
+                questions.map((q, idx) => (
+                  <div key={q._id} className="group bg-white p-6 rounded-[2rem] border border-white shadow-sm hover:shadow-xl hover:shadow-indigo-100 transition-all duration-300">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-bold text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-400 transition-colors">
+                        #{q._id.slice(-6).toUpperCase()}
+                      </span>
+                      <span className="px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                        {q.category}
+                      </span>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-20 text-slate-400 font-medium">
-                    {searchTerm || categoryFilter 
-                      ? "По вашему запросу ничего не найдено"
-                      : "Вопросы не найдены"}
+                    
+                    <h4 className="text-lg font-bold text-slate-800 mb-6 leading-snug">
+                      {q.question}
+                    </h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {q.options.map((opt, i) => {
+                        const isCorrect = opt === q.answer;
+                        const label = String.fromCharCode(65 + i); // A, B, C, D
+                        
+                        return (
+                          <div 
+                            key={i} 
+                            className={`flex items-center gap-3 p-4 rounded-2xl border transition-all
+                              ${isCorrect 
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 ring-1 ring-emerald-200' 
+                                : 'bg-slate-50 border-slate-100 text-slate-600'}`}
+                          >
+                            <span className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black
+                              ${isCorrect ? 'bg-emerald-500 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                              {label}
+                            </span>
+                            <span className="text-sm font-medium">{opt}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                )}
-              </div>
+                ))
+              ) : (
+                <div className="bg-white/40 border-2 border-dashed border-slate-200 rounded-[2rem] py-20 text-center">
+                   <div className="bg-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm text-slate-300">
+                      <Search size={32} />
+                   </div>
+                   <p className="text-slate-500 font-bold text-lg">Вопросы не найдены</p>
+                   <p className="text-slate-400 text-sm">Попробуйте изменить параметры поиска</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
