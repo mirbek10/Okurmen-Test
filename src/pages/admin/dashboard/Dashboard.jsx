@@ -11,7 +11,7 @@ export function Dashboard() {
     start,
     clearRes, // ⬅️ ДОБАВИТЬ ЭТОТ МЕТОД В STORE
   } = useAdminPreviewStore();
-  
+
   const {
     questions,
     total,
@@ -35,7 +35,7 @@ export function Dashboard() {
   // Загружаем вопросы при монтировании
   useEffect(() => {
     fetchQuestions();
-    
+
     // Очищаем состояние при монтировании компонента
     return () => {
       if (redirectRef.current) {
@@ -55,73 +55,96 @@ export function Dashboard() {
   const createTestsFromQuestions = useCallback(() => {
     if (questions.length === 0) return;
 
+    // Считаем вопросы по всем категориям, включая python
     const categoryCounts = {
       html: 0,
       javascript: 0,
       react: 0,
       typescript: 0,
+      python: 0, // Добавили Python
     };
 
     questions.forEach((q) => {
-      if (categoryCounts.hasOwnProperty(q.category)) {
-        categoryCounts[q.category]++;
+      const cat = q.category?.toLowerCase();
+      if (categoryCounts.hasOwnProperty(cat)) {
+        categoryCounts[cat]++;
       }
     });
 
+    // 1. Одиночные тесты
     const availableTests = [
       {
         id: "html",
         name: "HTML/CSS",
-        description: "Тестирование знаний по HTML и CSS",
         questionsCount: categoryCounts.html,
         category: "html",
-        difficulty: "mixed",
         icon: "🔵",
+        description: "Основы верстки",
       },
       {
         id: "javascript",
         name: "JavaScript",
-        description: "Тестирование знаний по JavaScript",
         questionsCount: categoryCounts.javascript,
         category: "javascript",
-        difficulty: "mixed",
         icon: "🟡",
+        description: "Deep Dive JS",
       },
       {
         id: "react",
         name: "React/Redux",
-        description: "Тестирование знаний по React и Redux",
         questionsCount: categoryCounts.react,
         category: "react",
-        difficulty: "mixed",
         icon: "🔷",
+        description: "Frontend Frameworks",
       },
       {
         id: "typescript",
         name: "TypeScript",
-        description: "Тестирование знаний по TypeScript",
         questionsCount: categoryCounts.typescript,
         category: "typescript",
-        difficulty: "mixed",
         icon: "🟣",
+        description: "Static Typing",
+      },
+      {
+        id: "python",
+        name: "Python Core",
+        questionsCount: categoryCounts.python,
+        category: "python",
+        icon: "🐍",
+        description: "Backend & Data Science",
       },
     ];
 
-    const hasEnoughQuestions =
-      categoryCounts.html >= 5 &&
-      categoryCounts.javascript >= 5 &&
-      categoryCounts.react >= 5 &&
-      categoryCounts.typescript >= 5;
+    // 2. Логика для Смешанного FRONTEND (HTML + JS + React + TS)
+    const frontCategories = ["html", "javascript", "react", "typescript"];
+    const hasEnoughFront = frontCategories.every(
+      (cat) => categoryCounts[cat] >= 3
+    ); // например, минимум по 3 вопроса
 
-    if (hasEnoughQuestions) {
+    if (hasEnoughFront) {
       availableTests.push({
-        id: "mixed",
-        name: "Смешанный тест",
-        description: "Тестирование по всем категориям (по 5 вопросов из каждой)",
-        questionsCount: 20,
-        category: "mixed",
+        id: "mixed_frontend",
+        name: "Смешанный FRONTEND",
+        description: "Комплексный тест: HTML, JS, React и TS",
+        questionsCount: 20, // Суммарно сколько будет в тесте
+        category: "frontend", // Эту категорию должен уметь обрабатывать бэкенд
         difficulty: "mixed",
-        icon: "🌈",
+        icon: "🚀",
+      });
+    }
+
+    // 3. Логика для Смешанного PYTHON (если у вас внутри python есть подкатегории или просто общий тест)
+    // Если Python просто одна категория, он уже есть в списке выше.
+    // Но если нужно пометить его именно как "Смешанный Python" (например, основы + django):
+    if (categoryCounts.python >= 10) {
+      availableTests.push({
+        id: "mixed_python",
+        name: "Смешанный PYTHON",
+        description: "Core Python, Алгоритмы и ООП",
+        questionsCount: Math.min(categoryCounts.python, 25),
+        category: "python",
+        difficulty: "advanced",
+        icon: "🔥",
       });
     }
 
@@ -139,21 +162,21 @@ export function Dashboard() {
     // 3. Редирект еще не был выполнен
     if (res?.id && isCreatingTest && !redirectRef.current) {
       redirectRef.current = true; // Устанавливаем флаг редиректа
-      
+
       // Навигация с небольшей задержкой для плавности
       setTimeout(() => {
         navigate(`/admin/test-monitor/${res.id}`);
-        
+
         // Сбрасываем состояния
         setIsCreatingTest(false);
         setShowSettingsModal(false);
         setSelectedTest(null);
-        
+
         // Очищаем форму
         setGroup("");
         setTeacher("");
         setError("");
-        
+
         // Очищаем результат в сторе
         clearRes();
       }, 100);
@@ -343,6 +366,8 @@ export function Dashboard() {
                           ? "bg-cyan-400"
                           : test.category === "typescript"
                           ? "bg-purple-400"
+                          : test.category === "python"
+                          ? "bg-green-500"
                           : "bg-gradient-to-r from-pink-400 to-orange-400"
                       }`}
                     >
@@ -516,7 +541,6 @@ export function Dashboard() {
                       className="w-full border-2 border-gray-300 rounded-lg p-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                     />
                   </div>
-                  
                 </div>
 
                 {/* Длительность теста */}
@@ -540,7 +564,6 @@ export function Dashboard() {
                       className="w-full border-2 border-gray-300 rounded-lg p-3 text-base focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-colors"
                     />
                   </div>
-                
                 </div>
 
                 {/* Предпросмотр настроек */}
