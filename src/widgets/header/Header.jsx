@@ -34,10 +34,8 @@ export function Header() {
 
   // Функция для выхода
   const handleLogout = () => {
-    // Здесь можно добавить логику выхода
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
-    window.location.href = "/login";
+    Cookies.remove("adminToken");
+    window.location.href = "/";
   };
 
   // Проверяем активность пользователя

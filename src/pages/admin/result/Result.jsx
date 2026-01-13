@@ -35,9 +35,9 @@ function Result() {
     tests.forEach((test) => {
       test.students?.forEach((student) => {
         totalStudents++;
-        if (student.status === "finished") {
+        if (student.status === "finished" || student.status === "force-finished") {
           finishedStudents++;
-          const correct =
+          const correct =  
             student.answers?.filter((a) => a.isCorrect).length || 0;
           const total = student.answers?.length || 0;
           const score = total > 0 ? (correct / total) * 100 : 0;
@@ -55,12 +55,14 @@ function Result() {
       totalTests: tests.length,
       totalStudents,
       finishedStudents,
-      averageScore: averageScore.toFixed(1),
+      averageScore: averageScore.toFixed(2),
     };
   }, [tests]);
 
-  const handleDeleteTest = (testId) => {
-    deleteTest(testId);
+  const handleDeleteTest = (code) => {
+    deleteTest(code);
+    setSelectedTest(null);
+    getTests();
   };
 
   const handleViewTestDetails = (test) => {
@@ -129,60 +131,83 @@ function Result() {
       {/* Список тестов */}
       <div className="space-y-8">
         {Array.isArray(tests) &&
-          tests?.map((test) => (
-            <div
-              key={test.id}
-              className="bg-white rounded-2xl shadow-sm border border-slate-200 relative"
-            >
-              <div className="bg-slate-50 border-b border-slate-200 p-6 flex flex-wrap items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="bg-white p-3 rounded-lg shadow-sm font-bold text-indigo-600 border border-slate-100 uppercase">
-                    {test.category}
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-800">
-                      Группа: {test.group}
-                    </h2>
-                    <p className="text-sm text-slate-500 flex items-center gap-1">
-                      <UserIcon size={14} /> Преподаватель: {test.teacher}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-center flex flex-col">
-                  <p className="text-slate-400 uppercase text-[10px] font-bold">
-                    Статус
-                  </p>
-                  <span
-                    className={`font-bold ${
-                      test.finishedAt ? "text-green-500" : "text-yellow-500"
-                    }`}
-                  >
-                    {test.finishedAt ? "Завершен" : "В процессе"}
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    setSelectedTest(
-                      selectedTest?.code === test.code ? null : test
-                    );
-                  }}
-                  className="text-slate-400 hover:text-slate-600"
-                >
-                  <HiOutlineDotsVertical />
-                </button>
-              </div>
+          tests?.map((test) => {
+            const groupScores =
+              test.students?.map((student) => {
+                const correctCount =
+                  student.answers?.filter((a) => a.isCorrect).length || 0;
+                const totalCount = student.answers?.length || 0;
+                return totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
+              }) || [];
 
-              {/* Окно просмотра теста */}
-              {selectedTest && selectedTest.code === test.code && (
-                <>
-                  <div className="absolute top-[60px] right-4 bg-white rounded-lg shadow-lg border border-slate-200 z-50 h-full w-64 overflow-y-scroll scrollbar-none">
-                    <div className="p-4 border-b border-slate-100">
-                      <h3 className="font-bold text-slate-700">
-                        Информация о тесте
-                      </h3>
+            const averageScore =
+              groupScores.length > 0
+                ? (
+                    groupScores.reduce((a, b) => a + b, 0) / groupScores.length
+                  ).toFixed(1)
+                : 0;
+            return (
+              <div
+                key={test.id}
+                className="bg-white rounded-2xl shadow-sm border border-slate-200 relative"
+              >
+                <div className="bg-slate-50 border-b border-slate-200 p-6 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white p-3 rounded-lg shadow-sm font-bold text-indigo-600 border border-slate-100 uppercase">
+                      {test.category}
                     </div>
-                    <div className="p-4 space-y-3">
-                      {/* <div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-800">
+                        Группа: {test.group}
+                      </h2>
+                      <p className="text-sm text-slate-500 flex items-center gap-1">
+                        <UserIcon size={14} /> Преподаватель: {test.teacher}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-center flex flex-col border-x border-slate-200 px-6">
+                    <p className="text-slate-400 uppercase text-[10px] font-bold">
+                      Ср. балл группы
+                    </p>
+                    <span className="font-bold text-indigo-600 text-lg">
+                      {averageScore}%
+                    </span>
+                  </div>
+                  <div className="text-center flex flex-col">
+                    <p className="text-slate-400 uppercase text-[10px] font-bold">
+                      Статус
+                    </p>
+                    <span
+                      className={`font-bold ${
+                        test.finishedAt ? "text-green-500" : "text-yellow-500"
+                      }`}
+                    >
+                      {test.finishedAt ? "Завершен" : "В процессе"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedTest(
+                        selectedTest?.code === test.code ? null : test
+                      );
+                    }}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <HiOutlineDotsVertical />
+                  </button>
+                </div>
+
+                {/* Окно просмотра теста */}
+                {selectedTest && selectedTest.code === test.code && (
+                  <>
+                    <div className="absolute top-[60px] right-4 bg-white rounded-lg shadow-lg border border-slate-200 z-50 h-full w-64 overflow-y-scroll scrollbar-none">
+                      <div className="p-4 border-b border-slate-100">
+                        <h3 className="font-bold text-slate-700">
+                          Информация о тесте
+                        </h3>
+                      </div>
+                      <div className="p-4 space-y-3">
+                        {/* <div>
                     <p className="text-xs text-slate-500 uppercase font-bold">
                       Дисциплина
                     </p>
@@ -190,120 +215,123 @@ function Result() {
                       {test.subject || "Не указано"}
                     </p>
                   </div> */}
-                      <div>
-                        <p className="text-xs text-slate-500 uppercase font-bold">
-                          Дата создания
-                        </p>
-                        <p className="font-medium">
-                          {new Date(test.startedAt).toLocaleString("ru-RU")}
-                        </p>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase font-bold">
+                            Дата создания
+                          </p>
+                          <p className="font-medium">
+                            {new Date(test.startedAt).toLocaleString("ru-RU")}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase font-bold">
+                            Дата завершения
+                          </p>
+                          <p className="font-medium">
+                            {test.finishedAt
+                              ? new Date(test.finishedAt).toLocaleDateString()
+                              : "Не завершен"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-slate-500 uppercase font-bold">
+                            Студентов прошло
+                          </p>
+                          <p className="font-medium">
+                            {test.students?.filter(
+                              (s) => s.status === "finished"
+                            ).length || 0}{" "}
+                            / {test.students?.length || 0}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-slate-500 uppercase font-bold">
-                          Дата завершения
-                        </p>
-                        <p className="font-medium">
-                          {test.finishedAt
-                            ? new Date(test.finishedAt).toLocaleDateString()
-                            : "Не завершен"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500 uppercase font-bold">
-                          Студентов прошло
-                        </p>
-                        <p className="font-medium">
-                          {test.students?.filter((s) => s.status === "finished")
-                            .length || 0}{" "}
-                          / {test.students?.length || 0}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="p-4 border-t border-slate-100 flex gap-2">
-                      <button className="flex-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 py-2 rounded-lg text-sm font-medium transition-colors">
-                        <Link to={`/admin/test-monitor/${test.id}`}>
-                          Подробнее
-                        </Link>
-                      </button>
-                      {/* <button
+                      <div className="p-4 border-t border-slate-100 flex gap-2">
+                        <button className="flex-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 py-2 rounded-lg text-sm font-medium transition-colors">
+                          <Link to={`/admin/test-monitor/${test.id}`}>
+                            Подробнее
+                          </Link>
+                        </button>
+                        {/* <button
                     onClick={() => setSelectedTest(null)}
                     className="flex-1 bg-slate-50 text-slate-600 hover:bg-slate-100 py-2 rounded-lg text-sm font-medium transition-colors"
                   >
                     Закрыть
                   </button> */}
-                      <button
-                        onClick={() => handleDeleteTest(test.id)}
-                        className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-lg text-sm font-medium transition-colors"
-                      >
-                        Удалить
-                      </button>
-                    </div>
-                  </div>
-                  <div
-                    onClick={() => setSelectedTest(null)}
-                    className="fixed inset-0 z-40"
-                  ></div>
-                </>
-              )}
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-white text-slate-400 text-xs uppercase font-bold border-b">
-                      <th className="px-6 py-4">Студент</th>
-                      <th className="px-6 py-4">Прогресс</th>
-                      <th className="px-6 py-4">Балл</th>
-                      <th className="px-6 py-4">Статус</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {test.students?.map((student) => {
-                      const correctCount =
-                        student.answers?.filter((a) => a.isCorrect).length || 0;
-                      const totalCount = student.answers?.length || 0;
-                      const score =
-                        totalCount > 0
-                          ? ((correctCount / totalCount) * 100).toFixed(0)
-                          : 0;
-
-                      return (
-                        <tr
-                          key={student.id}
-                          onClick={() => setSelectedStudent(student)}
-                          className="hover:bg-indigo-50/50 cursor-pointer transition-colors group"
+                        <button
+                          onClick={() => handleDeleteTest(test.code)}
+                          className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 py-2 rounded-lg text-sm font-medium transition-colors"
                         >
-                          <td className="px-6 py-4">
-                            <div className="font-semibold text-slate-700 group-hover:text-indigo-600">
-                              {student.name}
-                            </div>
-                            <div className="text-[10px] text-slate-400">
-                              ID: {student.id}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="w-32 bg-slate-100 h-2 rounded-full overflow-hidden">
-                              <div
-                                className="bg-indigo-500 h-full"
-                                style={{ width: `${score}%` }}
-                              />
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 font-bold text-slate-700">
-                            {score}%
-                          </td>
-                          <td className="px-6 py-4 text-xs font-medium uppercase text-slate-500">
-                            {student.status === "finished"
-                              ? "✅ Готов"
-                              : "⏳ В процессе"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          Удалить
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      onClick={() => setSelectedTest(null)}
+                      className="fixed inset-0 z-40"
+                    ></div>
+                  </>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-white text-slate-400 text-xs uppercase font-bold border-b">
+                        <th className="px-6 py-4">Студент</th>
+                        <th className="px-6 py-4">Прогресс</th>
+                        <th className="px-6 py-4">Балл</th>
+                        <th className="px-6 py-4">Статус</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {test.students?.map((student) => {
+                        const correctCount =
+                          student.answers?.filter((a) => a.isCorrect).length ||
+                          0;
+                        const totalCount = student.answers?.length || 0;
+                        const score =
+                          totalCount > 0
+                            ? ((correctCount / totalCount) * 100).toFixed(0)
+                            : 0;
+
+                        return (
+                          <tr
+                            key={student.id}
+                            onClick={() => setSelectedStudent(student)}
+                            className="hover:bg-indigo-50/50 cursor-pointer transition-colors group"
+                          >
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-slate-700 group-hover:text-indigo-600">
+                                {student.name}
+                              </div>
+                              <div className="text-[10px] text-slate-400">
+                                ID: {student.id}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="w-32 bg-slate-100 h-2 rounded-full overflow-hidden">
+                                <div
+                                  className="bg-indigo-500 h-full"
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 font-bold text-slate-700">
+                              {score}%
+                            </td>
+                            <td className="px-6 py-4 text-xs font-medium uppercase text-slate-500">
+                              {student.status === "finished"
+                                ? "✅ Готов"
+                                : "⏳ В процессе"}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
       </div>
 
       {/* МОДАЛЬНОЕ ОКНО */}

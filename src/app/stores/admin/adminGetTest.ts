@@ -24,25 +24,29 @@ export const useAdminGetTestStore = create<AdminGetTestState>((set) => ({
             set({ loading: false });
         }
     },
-    deleteTest: async (id: string | number) => { // id может быть и строкой (ObjectId)
+    deleteTest: async (code: string | number) => {
         try {
             set({ loading: true, error: null });
-            
-            // Отправляем запрос на удаление
-            const response = await axiosAdmin.delete(`/admin/tests/${id}`);
-            
+
+            // 1. Отправляем запрос по новому пути с использованием CODE
+            // Убедитесь, что префикс /admin/tests совпадает с тем, как подключен роутер в express
+            const response = await axiosAdmin.delete(`/admin/tests/by-code/${code}`);
+
             if (response.data.success) {
-                // ОБНОВЛЯЕМ СОСТОЯНИЕ ПРАВИЛЬНО:
-                // Оставляем в массиве только те тесты, id которых НЕ совпадает с удаленным
+                // 2. ОБНОВЛЯЕМ СОСТОЯНИЕ:
+                // Фильтруем массив tests, удаляя объект, у которого совпадает code
                 set((state) => ({
-                    tests: state.tests.filter((test) => 
-                        test.id !== id && test._id !== id
+                    tests: state.tests.filter((test) =>
+                        String(test.code) !== String(code)
                     )
                 }));
+
+                // Опционально: можно вывести сообщение об успехе из ответа
+                // console.log(response.data.message);
             }
         } catch (error) {
             console.error("Ошибка при удалении:", error);
-            set({ error: (error as Error).message });
+            set({ error: (error as any).response?.data?.message || (error as Error).message });
         } finally {
             set({ loading: false });
         }
