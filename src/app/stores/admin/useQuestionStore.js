@@ -38,9 +38,9 @@ export const useQuestionStore = create((set, get) => ({
             set({ loading: true });
             const state = get();
 
-            // Собираем параметры запроса
             const requestParams = {
-                limit: 20,
+                // Если вы грузите тест, лимит должен быть большим
+                limit: params.limit || 20,
                 page: params.page || state.page,
                 search: params.search !== undefined ? params.search : state.search,
                 category: params.category !== undefined ? params.category : state.category,
@@ -50,14 +50,16 @@ export const useQuestionStore = create((set, get) => ({
 
             const response = await axiosAdmin.get('/questions', { params: requestParams });
 
-            // Важно: деструктуризация должна соответствовать ответу твоего API
             const { questions, total, totalPages, hasMore, page } = response.data;
 
-            // Фильтруем (только те, где есть 4 варианта) и очищаем
-            const validOnes = questions.filter(q => q.options?.length === 4);
-            const cleaned = cleanQuestions(validOnes);
-            console.log(questions);
+            // ИСПРАВЛЕНИЕ: Не фильтруйте строго по 4 опциям, 
+            // если не уверены, что в базе их всегда 4.
+            // Просто проверяем, что опции вообще есть.
+            const validOnes = questions.filter(q => Array.isArray(q.options) && q.options.length > 0);
 
+            // Очистку cleanQuestions лучше пока отключить или сделать мягче,
+            // чтобы не поломать сравнение правильных ответов.
+            const cleaned = cleanQuestions(validOnes);
 
             set({
                 questions: cleaned,
@@ -70,6 +72,7 @@ export const useQuestionStore = create((set, get) => ({
                 loading: false
             });
         } catch (error) {
+            console.error("Fetch error:", error);
             set({ error: "Ошибка загрузки", loading: false });
         }
     },
@@ -90,15 +93,11 @@ export const useQuestionStore = create((set, get) => ({
             }
 
             const formData = new FormData();
-            // Имя 'file' должно СТРОГО совпадать с upload.single('file') на бэкенде
             formData.append('file', file);
 
-            // 2. ОТПРАВКА: Используем axios БЕЗ ручных заголовков для этого запроса
             await axiosAdmin.post('/questions/upload', formData, {
-                // Это ВАЖНО: оставляем headers пустыми или 
-                // убеждаемся, что axiosAdmin не добавляет лишнего
                 headers: {
-                    'Content-Type': 'multipart/form-data' // В некоторых версиях axios лучше убрать вообще
+                    'Content-Type': 'multipart/form-data'
                 }
             });
 

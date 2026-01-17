@@ -5,8 +5,6 @@ import {
   CheckCircle,
   AlertTriangle,
   Shuffle,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import { useSetAnswere } from "@/app/stores/user/setAnswer";
 import { useTestStatus } from "@/app/stores/user/getTestStatus";
@@ -47,7 +45,6 @@ export const StudentTestPage = () => {
   // Состояния
   const [loading, setLoading] = useState(true);
   const [testQuestions, setTestQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -131,12 +128,9 @@ export const StudentTestPage = () => {
         sessionId = savedSessionId;
         selectedQuestions = savedSessionData.questions;
         
-        // Загружаем сохраненные ответы и индекс
+        // Загружаем сохраненные ответы
         if (savedSessionData.answers) {
           setSelectedAnswers(savedSessionData.answers);
-        }
-        if (savedSessionData.currentIndex !== undefined) {
-          setCurrentQuestionIndex(savedSessionData.currentIndex);
         }
       } else {
         const maxQuestions = Math.min(20, filteredQuestions.length);
@@ -182,7 +176,6 @@ export const StudentTestPage = () => {
           category: categoryId,
           questions: testQuestions,
           answers: selectedAnswers,
-          currentIndex: currentQuestionIndex,
           lastSaved: new Date().toISOString(),
         };
         localStorage.setItem(testSessionId, JSON.stringify(sessionData));
@@ -192,7 +185,7 @@ export const StudentTestPage = () => {
     };
 
     saveProgress();
-  }, [testSessionId, testQuestions, selectedAnswers, currentQuestionIndex, categoryId, studentData]);
+  }, [testSessionId, testQuestions, selectedAnswers, categoryId, studentData]);
 
   // 5. ФУНКЦИЯ ОТПРАВКИ
   const submitTest = useCallback(
@@ -202,8 +195,7 @@ export const StudentTestPage = () => {
       setIsSubmitting(true);
 
       const formattedAnswers = testQuestions.map((question, index) => {
-        const questionId = question._id || question.id || `q_${index}`;
-        const selectedOptionId = finalAnswers[questionId];
+        const selectedOptionId = finalAnswers[question.id];
         let selectedOptionText = null;
         let isCorrect = false;
 
@@ -222,7 +214,7 @@ export const StudentTestPage = () => {
           question: question.question,
           answer: selectedOptionText || "Нет ответа",
           isCorrect: isCorrect,
-          questionId: questionId,
+          questionId: question.id,
           questionIndex: index + 1,
         };
       });
@@ -311,25 +303,22 @@ export const StudentTestPage = () => {
       
       return updated;
     });
-  };
 
-  const handleNext = () => {
-    if (currentQuestionIndex < testQuestions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Прокручиваем к следующему вопросу
+    const currentIndex = testQuestions.findIndex((q) => q.id === questionId);
+    if (currentIndex < testQuestions.length - 1) {
+      setTimeout(() => {
+        const nextQuestionElement = document.getElementById(
+          `question-${testQuestions[currentIndex + 1].id}`
+        );
+        if (nextQuestionElement) {
+          nextQuestionElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 300);
     }
-  };
-
-  const handlePrev = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  const goToQuestion = (index) => {
-    setCurrentQuestionIndex(index);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleManualSubmit = async () => {
@@ -356,14 +345,51 @@ export const StudentTestPage = () => {
     }
   };
 
-  const progressPercentage = testQuestions.length
-    ? ((currentQuestionIndex + 1) / testQuestions.length) * 100
-    : 0;
+  const regenerateTest = () => {
+    if (!testQuestions.length || isSubmitting) return;
 
-  const currentQuestion = testQuestions[currentQuestionIndex];
-  const questionId = currentQuestion ? (currentQuestion._id || currentQuestion.id || `q_${currentQuestionIndex}`) : null;
-  const currentAnswer = questionId ? selectedAnswers[questionId] : undefined;
-  const isLastQuestion = currentQuestionIndex === testQuestions.length - 1;
+    localStorage.removeItem(`test_session_${categoryId}`);
+    if (testSessionId) {
+      localStorage.removeItem(testSessionId);
+    }
+
+    setTestQuestions([]);
+    setSelectedAnswers({});
+    setTestSessionId(null);
+
+    const filteredQuestions =
+      categoryId !== "mixed"
+        ? questions.filter((q) => q.category === categoryId)
+        : questions;
+
+    const maxQuestions = Math.min(20, filteredQuestions.length);
+    const shuffled = shuffleArray(filteredQuestions);
+    const newQuestions = shuffled.slice(0, maxQuestions);
+
+    const newSessionId = generateTestSessionId(
+      categoryId,
+      studentData?.studentId || "guest"
+    );
+
+    localStorage.setItem(`test_session_${categoryId}`, newSessionId);
+    localStorage.setItem(
+      newSessionId,
+      JSON.stringify({
+        studentId: studentData?.studentId || "guest",
+        category: categoryId,
+        questions: newQuestions,
+        answers: {},
+        createdAt: new Date().toISOString(),
+      })
+    );
+
+    setTestQuestions(newQuestions);
+    setTestSessionId(newSessionId);
+  };
+
+  const progressPercentage = testQuestions.length
+    ? (Object.keys(selectedAnswers).length / testQuestions.length) * 100
+    : 0;
 
   const categoryNames = {
     html: "HTML/CSS",
@@ -407,7 +433,7 @@ export const StudentTestPage = () => {
       </div>
     );
 
-  if (!testQuestions.length || !currentQuestion)
+  if (!testQuestions.length)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
@@ -436,13 +462,6 @@ export const StudentTestPage = () => {
                 {categoryNames[categoryId] || "Тест"} | {testQuestions.length}{" "}
                 вопросов
               </h1>
-              <span
-                className={`text-sm font-medium ${
-                  status === "started" ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {status === "started" ? "● АКТИВЕН" : "● ЗАВЕРШЕНИЕ..."}
-              </span>
             </div>
 
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
@@ -453,151 +472,128 @@ export const StudentTestPage = () => {
             </div>
             <div className="flex items-center justify-between mt-2">
               <span className="text-sm text-gray-600">
-                Вопрос {currentQuestionIndex + 1} из {testQuestions.length}
-              </span>
-              <span className="text-sm text-gray-600">
                 Отвечено: {Object.keys(selectedAnswers).length} из{" "}
                 {testQuestions.length}
               </span>
-            </div>
-          </div>
-
-          {/* Текущий вопрос */}
-          <div className="bg-white rounded-lg shadow-md p-6 border-2 border-gray-200 mb-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                    Вопрос {currentQuestionIndex + 1}
-                  </span>
-                  <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">
-                    {currentQuestion.difficulty || "средний"}
-                  </span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800">
-                  {currentQuestion.question}
-                </h3>
-              </div>
-              {currentAnswer !== undefined && (
-                <CheckCircle
-                  className="text-green-500 flex-shrink-0 ml-2"
-                  size={24}
-                />
-              )}
-            </div>
-
-            <div className="space-y-3">
-              {currentQuestion.options.map((option, optionIndex) => {
-                const isSelected = currentAnswer === optionIndex;
-
-                return (
-                  <div
-                    key={`${questionId}-option-${optionIndex}`}
-                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                      isSelected
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAnswerChange(questionId, optionIndex);
-                    }}
-                  >
-                    <div className="flex items-center">
-                      <div
-                        className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
-                          isSelected
-                            ? "border-blue-600 bg-blue-600"
-                            : "border-gray-400"
-                        }`}
-                      >
-                        {isSelected && (
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        )}
-                      </div>
-                      <span
-                        className={`flex-1 ${
-                          isSelected
-                            ? "font-medium text-blue-900"
-                            : "text-gray-700"
-                        }`}
-                      >
-                        {option}
-                      </span>
-                      {isSelected && (
-                        <CheckCircle className="text-blue-600 ml-2" size={20} />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Навигация */}
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <button
-              onClick={handlePrev}
-              disabled={currentQuestionIndex === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              <ChevronLeft size={20} />
-              Назад
-            </button>
-
-            {!isLastQuestion ? (
               <button
-                onClick={handleNext}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Следующий
-                <ChevronRight size={20} />
-              </button>
-            ) : (
-              <button
-                onClick={handleManualSubmit}
+                onClick={regenerateTest}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                title="Получить новый набор вопросов"
               >
-                Завершить тест
-                <CheckCircle size={20} />
+                <Shuffle size={16} />
+                Новый тест
               </button>
-            )}
+              <span
+                className={`text-sm font-medium ${
+                  status === "started" ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {status === "started" ? "● АКТИВЕН" : "● ЗАВЕРШЕНИЕ..."}
+              </span>
+            </div>
           </div>
 
-          {/* Навигация по всем вопросам */}
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-            <h3 className="font-semibold text-gray-800 mb-4">
-              Навигация по вопросам:
-            </h3>
-            <div className="grid grid-cols-10 gap-2">
-              {testQuestions.map((question, index) => {
-                const qId = question._id || question.id || `q_${index}`;
-                const isAnswered = selectedAnswers[qId] !== undefined;
-                const isCurrent = index === currentQuestionIndex;
+          {/* Все вопросы */}
+          <div className="space-y-8">
+            {testQuestions.map((question, questionIndex) => {
+              const currentAnswer = selectedAnswers[question.id];
+              
+              return (
+                <div
+                  key={question.id}
+                  id={`question-${question.id}`}
+                  className="bg-white rounded-lg shadow-md p-6 border-2 border-gray-200"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
+                          Вопрос {questionIndex + 1}
+                        </span>
+                        <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">
+                          {question.difficulty || "средний"}
+                        </span>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {question.question}
+                      </h3>
+                    </div>
+                    {currentAnswer !== undefined && (
+                      <CheckCircle
+                        className="text-green-500 flex-shrink-0 ml-2"
+                        size={24}
+                      />
+                    )}
+                  </div>
 
-                return (
-                  <button
-                    key={qId}
-                    onClick={() => goToQuestion(index)}
-                    className={`h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
-                      isCurrent
-                        ? "bg-blue-600 text-white ring-2 ring-blue-300"
-                        : isAnswered
-                        ? "bg-green-100 text-green-700 border border-green-300 hover:bg-green-200"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                  >
-                    {index + 1}
-                  </button>
-                );
-              })}
-            </div>
+                  <div className="space-y-3">
+                    {question.options.map((option, optionIndex) => {
+                      const isSelected = currentAnswer === optionIndex;
+                      
+                      return (
+                        <div
+                          key={`${question.id}-option-${optionIndex}`}
+                          className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                            isSelected
+                              ? "border-blue-500 bg-blue-50"
+                              : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                          }`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleAnswerChange(question.id, optionIndex);
+                          }}
+                        >
+                          <div className="flex items-center">
+                            <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
+                              isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-400'
+                            }`}>
+                              {isSelected && (
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              )}
+                            </div>
+                            <span
+                              className={`flex-1 ${
+                                isSelected
+                                  ? "font-medium text-blue-900"
+                                  : "text-gray-700"
+                              }`}
+                            >
+                              {option}
+                            </span>
+                            {isSelected && (
+                              <CheckCircle
+                                className="text-blue-600 ml-2"
+                                size={20}
+                              />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Кнопка отправки */}
+          <div className="mt-8 sticky bottom-0 bg-gray-50 py-4 border-t-2 border-gray-200">
+            <button
+              onClick={handleManualSubmit}
+              disabled={isSubmitting}
+              className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
+            >
+              {isSubmitting ? "Отправка..." : "Завершить тест"}
+            </button>
+            <p className="text-center text-sm text-gray-600 mt-2">
+              Отвечено: {Object.keys(selectedAnswers).length} из {testQuestions.length} вопросов
+            </p>
           </div>
 
           {/* Информация о тесте */}
-          <div className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <div className="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
             <h3 className="font-semibold text-gray-800 mb-2">
               📝 Информация о тесте:
             </h3>
@@ -612,9 +608,7 @@ export const StudentTestPage = () => {
               </li>
               <li>
                 • Ответов сохранено:{" "}
-                <span className="font-medium">
-                  {Object.keys(selectedAnswers).length}
-                </span>
+                <span className="font-medium">{Object.keys(selectedAnswers).length}</span>
               </li>
               <li>• Прогресс автоматически сохраняется</li>
             </ul>
