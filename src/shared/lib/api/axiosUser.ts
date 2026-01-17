@@ -1,4 +1,5 @@
 import axios from "axios";
+import Cookies from "js-cookie";
 
 // Создаём экземпляр axios
 export const axiosUser = axios.create({
@@ -11,6 +12,10 @@ export const axiosUser = axios.create({
 
 
 axiosUser.interceptors.request.use((config) => {
+  const token = Cookies.get('userToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
   return config;
 }, (error) => {
