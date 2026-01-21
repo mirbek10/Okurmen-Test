@@ -1,620 +1,219 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import {
-  CheckCircle,
-  AlertTriangle,
-  Shuffle,
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  ChevronLeft, 
+  Trash2, 
+  Monitor, 
+  Database, 
+  Calendar, 
+  CheckCircle2, 
+  Clock,
+  BarChart2,
+  Filter
 } from "lucide-react";
-import { useSetAnswere } from "@/app/stores/user/setAnswer";
-import { useTestStatus } from "@/app/stores/user/getTestStatus";
-import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
-import FocusGuard from "@/shared/lib/focusGuard/FocusGuard";
-import { toast } from "react-toastify";
-import Swal from "sweetalert2";
 
-// Функция для перемешивания массива (алгоритм Фишера-Йетса)
-const shuffleArray = (array) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
-
-// Функция для генерации уникального ID теста на основе категории и студента
-const generateTestSessionId = (categoryId, studentId) => {
-  const timestamp = Date.now();
-  return `${categoryId}-${studentId}-${timestamp}`;
-};
-
-export const StudentTestPage = () => {
+export function PracticeHistoryPage() {
   const navigate = useNavigate();
-  const { id: categoryId } = useParams();
+  const [history, setHistory] = useState([]);
+  const [filter, setFilter] = useState("all");
 
-  // Сторы
-  const { postAnswe, forcePostAnswere } = useSetAnswere();
-  const { status, getStatus } = useTestStatus();
-  const {
-    questions,
-    fetchQuestions,
-    loading: questionsLoading,
-  } = useQuestionStore();
-
-  // Состояния
-  const [loading, setLoading] = useState(true);
-  const [testQuestions, setTestQuestions] = useState([]);
-  const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
-  const [studentData, setStudentData] = useState(null);
-  const [testSessionId, setTestSessionId] = useState(null);
-
-  // Получаем код доступа из localStorage
-  const code = useMemo(() => {
-    try {
-      const storedCode = localStorage.getItem("code");
-      return storedCode ? JSON.parse(storedCode) : null;
-    } catch (e) {
-      console.error("Ошибка получения кода:", e);
-      return null;
-    }
+  useEffect(() => {
+    const savedHistory = JSON.parse(localStorage.getItem("practice_history") || "[]");
+    setHistory(savedHistory);
   }, []);
 
-  // 1. Получение данных студента
-  useEffect(() => {
-    try {
-      const userRaw = localStorage.getItem("user");
-      if (userRaw) {
-        const user = JSON.parse(userRaw);
-        setStudentData(user.student || user);
-      }
-    } catch (e) {
-      console.error("Ошибка парсинга данных студента:", e);
-    }
-  }, []);
-
-  // 2. Загрузка вопросов для выбранной категории
-  useEffect(() => {
-    const loadQuestions = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        await fetchQuestions({
-          category: categoryId === "mixed" ? "" : categoryId,
-          limit: 9999,
-        });
-      } catch (err) {
-        console.error("Ошибка загрузки вопросов:", err);
-        setError("Не удалось загрузить вопросы для теста");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (categoryId) {
-      loadQuestions();
-    }
-  }, [categoryId, fetchQuestions]);
-
-  // 3. Формирование теста из 20 случайных вопросов
-  useEffect(() => {
-    if (questions.length === 0 || questionsLoading) return;
-
-    try {
-      let filteredQuestions = questions;
-      if (categoryId !== "mixed") {
-        filteredQuestions = questions.filter((q) => q.category === categoryId);
-      }
-
-      if (filteredQuestions.length === 0) {
-        setError(`В категории "${categoryId}" нет доступных вопросов`);
-        return;
-      }
-
-      const savedSessionId = localStorage.getItem(`test_session_${categoryId}`);
-      const savedSessionData = savedSessionId
-        ? JSON.parse(localStorage.getItem(savedSessionId) || "{}")
-        : null;
-
-      let selectedQuestions;
-      let sessionId;
-
-      if (
-        savedSessionData?.questions &&
-        savedSessionData?.studentId === studentData?.studentId
-      ) {
-        sessionId = savedSessionId;
-        selectedQuestions = savedSessionData.questions;
-        
-        // Загружаем сохраненные ответы
-        if (savedSessionData.answers) {
-          setSelectedAnswers(savedSessionData.answers);
-        }
-      } else {
-        const maxQuestions = Math.min(20, filteredQuestions.length);
-        const shuffled = shuffleArray(filteredQuestions);
-        selectedQuestions = shuffled.slice(0, maxQuestions);
-
-        sessionId = generateTestSessionId(
-          categoryId,
-          studentData?.studentId || "guest"
-        );
-
-        localStorage.setItem(`test_session_${categoryId}`, sessionId);
-        localStorage.setItem(
-          sessionId,
-          JSON.stringify({
-            studentId: studentData?.studentId || "guest",
-            category: categoryId,
-            questions: selectedQuestions,
-            answers: {},
-            createdAt: new Date().toISOString(),
-          })
-        );
-        
-        setSelectedAnswers({});
-      }
-
-      setTestQuestions(selectedQuestions);
-      setTestSessionId(sessionId);
-    } catch (err) {
-      console.error("Ошибка формирования теста:", err);
-      setError("Ошибка при создании теста");
-    }
-  }, [questions, questionsLoading, categoryId, studentData]);
-
-  // 4. Сохранение прогресса теста в localStorage
-  useEffect(() => {
-    if (!testSessionId || !testQuestions.length) return;
-
-    const saveProgress = () => {
-      try {
-        const sessionData = {
-          studentId: studentData?.studentId || "guest",
-          category: categoryId,
-          questions: testQuestions,
-          answers: selectedAnswers,
-          lastSaved: new Date().toISOString(),
-        };
-        localStorage.setItem(testSessionId, JSON.stringify(sessionData));
-      } catch (err) {
-        console.error("Ошибка сохранения прогресса:", err);
-      }
-    };
-
-    saveProgress();
-  }, [testSessionId, testQuestions, selectedAnswers, categoryId, studentData]);
-
-  // 5. ФУНКЦИЯ ОТПРАВКИ
-  const submitTest = useCallback(
-    async (finalAnswers, isAuto) => {
-      if (isSubmitting || !testQuestions.length) return;
-
-      setIsSubmitting(true);
-
-      const formattedAnswers = testQuestions.map((question, index) => {
-        const selectedOptionId = finalAnswers[question.id];
-        let selectedOptionText = null;
-        let isCorrect = false;
-
-        if (selectedOptionId !== undefined) {
-          const selectedOptionIndex = parseInt(selectedOptionId);
-          if (
-            !isNaN(selectedOptionIndex) &&
-            question.options[selectedOptionIndex]
-          ) {
-            selectedOptionText = question.options[selectedOptionIndex];
-            isCorrect = selectedOptionText === question.answer;
-          }
-        }
-
-        return {
-          question: question.question,
-          answer: selectedOptionText || "Нет ответа",
-          isCorrect: isCorrect,
-          questionId: question.id,
-          questionIndex: index + 1,
-        };
-      });
-
-      const payload = {
-        testCode: String(code || ""),
-        studentId: studentData?.studentId || 0,
-        studentName: studentData?.name || "Анонимный студент",
-        category: categoryId,
-        answers: formattedAnswers,
-        totalQuestions: testQuestions.length,
-        answeredQuestions: Object.keys(finalAnswers).length,
-        testSessionId: testSessionId,
-      };
-
-      try {
-        if (isAuto) {
-          await forcePostAnswere(payload);
-        } else {
-          await postAnswe(payload);
-        }
-
-        localStorage.removeItem(`test_session_${categoryId}`);
-        if (testSessionId) {
-          localStorage.removeItem(testSessionId);
-        }
-
-        toast.success(
-          "Ваш результат успешно отправлен! Спасибо за прохождение теста."
-        );
-        localStorage.removeItem("code");
-        window.location.href = "/";
-      } catch (err) {
-        console.error("Ошибка при отправке ответов:", err);
-        setError("Ошибка при отправке результатов. Попробуйте еще раз.");
-        setIsSubmitting(false);
-      }
-    },
-    [
-      testQuestions,
-      code,
-      studentData,
-      categoryId,
-      testSessionId,
-      navigate,
-      postAnswe,
-      forcePostAnswere,
-      isSubmitting,
-    ]
-  );
-
-  // 6. ПОЛЛИНГ СТАТУСА
-  useEffect(() => {
-    if (!code || isSubmitting) return;
-
-    getStatus(String(code));
-
-    const intervalId = setInterval(() => {
-      getStatus(String(code));
-    }, 5000);
-
-    return () => clearInterval(intervalId);
-  }, [code, getStatus, isSubmitting]);
-
-  // 7. РЕАКЦИЯ НА ИЗМЕНЕНИЕ СТАТУСА
-  useEffect(() => {
-    if (status === "finished" && !isSubmitting) {
-      console.log("Тест завершен удаленно. Авто-отправка ответов...");
-      submitTest(selectedAnswers, "auto");
-    }
-  }, [status, selectedAnswers, submitTest, isSubmitting]);
-
-  // Обработчики интерфейса
-  const handleAnswerChange = (questionId, optionIndex) => {
-    console.log('=== Выбор ответа ===');
-    console.log('Question ID:', questionId);
-    console.log('Option Index:', optionIndex);
-    
-    setSelectedAnswers(prev => {
-      const updated = { ...prev };
-      updated[questionId] = optionIndex;
-      
-      console.log('Предыдущие ответы:', prev);
-      console.log('Обновленные ответы:', updated);
-      console.log('Количество ответов:', Object.keys(updated).length);
-      
-      return updated;
-    });
-
-    // Прокручиваем к следующему вопросу
-    const currentIndex = testQuestions.findIndex((q) => q.id === questionId);
-    if (currentIndex < testQuestions.length - 1) {
-      setTimeout(() => {
-        const nextQuestionElement = document.getElementById(
-          `question-${testQuestions[currentIndex + 1].id}`
-        );
-        if (nextQuestionElement) {
-          nextQuestionElement.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }
-      }, 300);
+  const clearHistory = () => {
+    if (window.confirm("Вы уверены, что хотите полностью очистить историю тренировок?")) {
+      localStorage.removeItem("practice_history");
+      setHistory([]);
     }
   };
 
-  const handleManualSubmit = async () => {
-    const answeredCount = Object.keys(selectedAnswers).length;
-    const totalCount = testQuestions.length;
+  const filteredHistory = history.filter(item => {
+    if (filter === "all") return true;
+    return item.type === filter;
+  });
 
-    let message = "Вы уверены, что хотите завершить тест?";
-    if (answeredCount < totalCount) {
-      message = `Вы ответили на ${answeredCount} из ${totalCount} вопросов. Всё равно завершить?`;
-    }
-
-    const result = await Swal.fire({
-      title: "Завершить тест?",
-      text: message,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Да, завершить",
-      cancelButtonText: "Отмена",
-      reverseButtons: true,
-    });
-
-    if (result.isConfirmed) {
-      submitTest(selectedAnswers);
-    }
+  const stats = {
+    total: history.length,
+    avgScore: history.length 
+      ? Math.round(history.reduce((acc, curr) => acc + curr.percent, 0) / history.length) 
+      : 0,
+    bestScore: history.length 
+      ? Math.max(...history.map(h => h.percent)) 
+      : 0
   };
-
-  const regenerateTest = () => {
-    if (!testQuestions.length || isSubmitting) return;
-
-    localStorage.removeItem(`test_session_${categoryId}`);
-    if (testSessionId) {
-      localStorage.removeItem(testSessionId);
-    }
-
-    setTestQuestions([]);
-    setSelectedAnswers({});
-    setTestSessionId(null);
-
-    const filteredQuestions =
-      categoryId !== "mixed"
-        ? questions.filter((q) => q.category === categoryId)
-        : questions;
-
-    const maxQuestions = Math.min(20, filteredQuestions.length);
-    const shuffled = shuffleArray(filteredQuestions);
-    const newQuestions = shuffled.slice(0, maxQuestions);
-
-    const newSessionId = generateTestSessionId(
-      categoryId,
-      studentData?.studentId || "guest"
-    );
-
-    localStorage.setItem(`test_session_${categoryId}`, newSessionId);
-    localStorage.setItem(
-      newSessionId,
-      JSON.stringify({
-        studentId: studentData?.studentId || "guest",
-        category: categoryId,
-        questions: newQuestions,
-        answers: {},
-        createdAt: new Date().toISOString(),
-      })
-    );
-
-    setTestQuestions(newQuestions);
-    setTestSessionId(newSessionId);
-  };
-
-  const progressPercentage = testQuestions.length
-    ? (Object.keys(selectedAnswers).length / testQuestions.length) * 100
-    : 0;
-
-  const categoryNames = {
-    html: "HTML/CSS",
-    javascript: "JavaScript",
-    react: "React/Redux",
-    typescript: "TypeScript",
-    mixed: "Смешанный тест",
-  };
-
-  if (loading || questionsLoading)
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-gray-600 mb-4">Загрузка вопросов...</div>
-        </div>
-      </div>
-    );
-
-  if (error)
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <AlertTriangle className="mx-auto text-red-500 mb-4" size={48} />
-          <div className="text-gray-800 font-semibold mb-2">{error}</div>
-          <button
-            onClick={() => navigate("/")}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-          >
-            На главную
-          </button>
-        </div>
-      </div>
-    );
-
-  if (isSubmitting)
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-gray-600 mb-4">Сохранение результатов...</div>
-        </div>
-      </div>
-    );
-
-  if (!testQuestions.length)
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="text-gray-600 mb-4">Тест не загружен</div>
-          <p className="text-sm text-gray-500 mb-6">
-            Попробуйте обновить страницу
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-          >
-            Обновить
-          </button>
-        </div>
-      </div>
-    );
 
   return (
-    <>
-      <FocusGuard />
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-2xl font-bold text-gray-800">
-                {categoryNames[categoryId] || "Тест"} | {testQuestions.length}{" "}
-                вопросов
-              </h1>
-            </div>
-
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div
-                className="bg-blue-600 h-full transition-all duration-300"
-                style={{ width: `${progressPercentage}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-sm text-gray-600">
-                Отвечено: {Object.keys(selectedAnswers).length} из{" "}
-                {testQuestions.length}
-              </span>
-              <button
-                onClick={regenerateTest}
-                disabled={isSubmitting}
-                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50"
-                title="Получить новый набор вопросов"
+    <div className="min-h-screen bg-slate-50 py-6 md:py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        
+        {/* Кнопка назад и заголовок */}
+        <div className="flex flex-col gap-6 mb-8">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
+              <button 
+                onClick={() => navigate(-1)}
+                className="p-2.5 md:p-3 bg-white rounded-xl md:rounded-2xl shadow-sm hover:bg-slate-50 transition-colors text-slate-600"
               >
-                <Shuffle size={16} />
-                Новый тест
+                <ChevronLeft size={20} />
               </button>
-              <span
-                className={`text-sm font-medium ${
-                  status === "started" ? "text-green-600" : "text-red-600"
-                }`}
-              >
-                {status === "started" ? "● АКТИВЕН" : "● ЗАВЕРШЕНИЕ..."}
-              </span>
+              <div>
+                <h1 className="text-xl md:text-3xl font-black text-slate-800 tracking-tight leading-none">История практик</h1>
+                <p className="text-slate-500 text-xs md:text-base font-medium mt-1">Ваши результаты</p>
+              </div>
             </div>
-          </div>
 
-          {/* Все вопросы */}
-          <div className="space-y-8">
-            {testQuestions.map((question, questionIndex) => {
-              const currentAnswer = selectedAnswers[question.id];
-              
-              return (
-                <div
-                  key={question.id}
-                  id={`question-${question.id}`}
-                  className="bg-white rounded-lg shadow-md p-6 border-2 border-gray-200"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                          Вопрос {questionIndex + 1}
-                        </span>
-                        <span className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5 rounded">
-                          {question.difficulty || "средний"}
-                        </span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        {question.question}
-                      </h3>
-                    </div>
-                    {currentAnswer !== undefined && (
-                      <CheckCircle
-                        className="text-green-500 flex-shrink-0 ml-2"
-                        size={24}
-                      />
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    {question.options.map((option, optionIndex) => {
-                      const isSelected = currentAnswer === optionIndex;
-                      
-                      return (
-                        <div
-                          key={`${question.id}-option-${optionIndex}`}
-                          className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                            isSelected
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
-                          }`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleAnswerChange(question.id, optionIndex);
-                          }}
-                        >
-                          <div className="flex items-center">
-                            <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
-                              isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-400'
-                            }`}>
-                              {isSelected && (
-                                <div className="w-2 h-2 bg-white rounded-full"></div>
-                              )}
-                            </div>
-                            <span
-                              className={`flex-1 ${
-                                isSelected
-                                  ? "font-medium text-blue-900"
-                                  : "text-gray-700"
-                              }`}
-                            >
-                              {option}
-                            </span>
-                            {isSelected && (
-                              <CheckCircle
-                                className="text-blue-600 ml-2"
-                                size={20}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Кнопка отправки */}
-          <div className="mt-8 sticky bottom-0 bg-gray-50 py-4 border-t-2 border-gray-200">
-            <button
-              onClick={handleManualSubmit}
-              disabled={isSubmitting}
-              className="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-lg"
-            >
-              {isSubmitting ? "Отправка..." : "Завершить тест"}
-            </button>
-            <p className="text-center text-sm text-gray-600 mt-2">
-              Отвечено: {Object.keys(selectedAnswers).length} из {testQuestions.length} вопросов
-            </p>
-          </div>
-
-          {/* Информация о тесте */}
-          <div className="mt-8 bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <h3 className="font-semibold text-gray-800 mb-2">
-              📝 Информация о тесте:
-            </h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>
-                • Категория:{" "}
-                <span className="font-medium">{categoryNames[categoryId]}</span>
-              </li>
-              <li>
-                • Всего вопросов:{" "}
-                <span className="font-medium">{testQuestions.length}</span>
-              </li>
-              <li>
-                • Ответов сохранено:{" "}
-                <span className="font-medium">{Object.keys(selectedAnswers).length}</span>
-              </li>
-              <li>• Прогресс автоматически сохраняется</li>
-            </ul>
+            {history.length > 0 && (
+              <button 
+                onClick={clearHistory}
+                className="flex items-center gap-1.5 px-3 py-2 text-red-500 font-bold text-[10px] md:text-sm hover:bg-red-50 rounded-xl transition-colors"
+              >
+                <Trash2 size={16} />
+                <span className="hidden xs:inline text-xs">Очистить всё</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {/* Мини-статистика: адаптивная сетка */}
+        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-8">
+          <StatCard icon={<Clock size={14}/>} label="Всего тестов" value={stats.total} />
+          <StatCard icon={<BarChart2 size={14}/>} label="Средний балл" value={`${stats.avgScore}%`} color="text-indigo-600" />
+          <StatCard icon={<CheckCircle2 size={14}/>} label="Лучший балл" value={`${stats.bestScore}%`} color="text-emerald-500" className="xs:col-span-2 md:col-span-1" />
+        </div>
+
+        {/* Фильтры: горизонтальный скролл на мобильных */}
+        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="p-2 bg-slate-200/50 rounded-lg text-slate-500 shrink-0">
+            <Filter size={16} />
+          </div>
+          {[
+            { id: 'all', label: 'Все' },
+            { id: 'front', label: 'Frontend' },
+            { id: 'back', label: 'Backend' }
+          ].map(btn => (
+            <button
+              key={btn.id}
+              onClick={() => setFilter(btn.id)}
+              className={`px-5 py-2 rounded-xl font-bold text-xs md:text-sm transition-all whitespace-nowrap ${
+                filter === btn.id 
+                ? 'bg-slate-800 text-white shadow-md' 
+                : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-100'
+              }`}
+            >
+              {btn.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Список результатов */}
+        <div className="space-y-3 md:space-y-4">
+          {filteredHistory.length === 0 ? (
+            <EmptyState navigate={navigate} />
+          ) : (
+            filteredHistory.map((item, idx) => (
+              <div 
+                key={idx}
+                className="bg-white border border-slate-100 p-4 md:p-6 rounded-2xl md:rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-4 hover:shadow-lg hover:shadow-slate-200/30 transition-all duration-300 group"
+              >
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <div className={`p-3 md:p-5 rounded-xl md:rounded-2xl transition-transform group-hover:scale-110 shrink-0 ${
+                    item.type === 'front' ? 'bg-blue-50 text-blue-500' : 'bg-emerald-50 text-emerald-500'
+                  }`}>
+                    {item.type === 'front' ? <Monitor size={24} /> : <Database size={24} />}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-black text-slate-800 uppercase text-[10px] md:text-sm tracking-wider truncate">
+                      {item.type === 'front' ? 'Frontend' : 'Backend'} Developer
+                    </h4>
+                    <div className="flex items-center gap-2 text-slate-400 text-[10px] md:text-sm mt-0.5 md:mt-1 flex-wrap">
+                      <span className="flex items-center gap-1 font-medium whitespace-nowrap">
+                        <Calendar size={12} />
+                        {new Date(item.date).toLocaleDateString('ru-RU')}
+                      </span>
+                      <span className="w-1 h-1 bg-slate-300 rounded-full shrink-0" />
+                      <span className="flex items-center gap-1 font-medium text-slate-500 whitespace-nowrap">
+                        <CheckCircle2 size={12} />
+                        {item.correct}/{item.total}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-6 border-t sm:border-t-0 pt-3 sm:pt-0">
+                  <div className="text-left sm:text-right">
+                    <div className={`text-2xl md:text-3xl font-black leading-none ${
+                      item.percent >= 80 ? 'text-emerald-500' : 
+                      item.percent >= 50 ? 'text-amber-500' : 'text-red-500'
+                    }`}>
+                      {item.percent}%
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mt-1">
+                      Результат
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => navigate(`/practice-test/${item.type}`)}
+                    className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm shrink-0"
+                  >
+                    <ArrowRight size={18} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
-};
+}
+
+// Компонент карточки статистики для чистоты кода
+function StatCard({ icon, label, value, color = "text-slate-800", className = "" }) {
+  return (
+    <div className={`bg-white p-4 md:p-6 rounded-2xl md:rounded-[2rem] border border-slate-100 shadow-sm ${className}`}>
+      <div className="text-slate-400 text-[9px] md:text-xs font-bold uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+        {icon} {label}
+      </div>
+      <div className={`text-xl md:text-3xl font-black ${color}`}>{value}</div>
+    </div>
+  );
+}
+
+// Пустое состояние
+function EmptyState({ navigate }) {
+  return (
+    <div className="bg-white rounded-3xl md:rounded-[2.5rem] p-8 md:p-12 text-center border-2 border-dashed border-slate-200">
+      <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <History className="text-slate-300" size={32} />
+      </div>
+      <h3 className="text-lg md:text-xl font-bold text-slate-800 mb-2">Записей нет</h3>
+      <p className="text-slate-500 text-sm mb-6 max-w-xs mx-auto">Вы еще не проходили тесты в этой категории.</p>
+      <button 
+        onClick={() => navigate('/practice')}
+        className="w-full sm:w-auto bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all text-sm"
+      >
+        Начать практику
+      </button>
+    </div>
+  );
+}
+
+// Иконки (остаются без изменений)
+function History({ className, size }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" />
+    </svg>
+  );
+}
+
+function ArrowRight({ className, size }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+    </svg>
+  );
+}

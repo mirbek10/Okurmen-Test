@@ -105,8 +105,8 @@ export function UserDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full mt-10">
             {[
               { label: "Пройдено тестов", val: user?.testsCompleted || 0, icon: <History className="text-indigo-500" /> },
-              { label: "Средний балл", val: `${user?.totalScore || 0}%`, icon: <BarChart3 className="text-violet-500" /> },
-              { label: "Место в рейтинге", val: `#${user?.rating || 0}`, icon: <Trophy className="text-amber-500" /> },
+              { label: "Средний балл", val: `${user?.totalScore || 0}`, icon: <BarChart3 className="text-violet-500" /> },
+              { label: "Points", val: `${user?.rating || 0}`, icon: <Trophy className="text-amber-500" /> },
             ].map((stat, i) => (
               <div key={i} className="bg-slate-50/50 p-6 rounded-[2.5rem] border border-slate-100 flex flex-col items-center group hover:bg-white hover:shadow-xl transition-all duration-300">
                 <div className="mb-3 p-3 bg-white rounded-2xl shadow-sm group-hover:scale-110 transition-transform">

@@ -18,7 +18,7 @@ import ProfileLayout from "@/widgets/layout/ProfileLayout";
 import { PracticeSelection } from "@/pages/profile/Test";
 import { Lider } from "@/pages/profile/Lider";
 import { PracticeTestPage } from "@/pages/profile/PracticeTestPage";
-// import { PracticeHistoryPage } from "@/pages/profile/PracticeHistoryPage";
+import { PracticeHistoryPage } from "@/pages/profile/PracticeHistoryPage";
 
 export const router = createBrowserRouter([
   {
@@ -67,10 +67,10 @@ export const router = createBrowserRouter([
         path: "leaderboard",
         element: <Lider />,
       },
-      // {
-      //   path:"history",
-      //   element:<PracticeHistoryPage/>
-      // }
+      {
+        path:"history",
+        element:<PracticeHistoryPage/>
+      }
     ],
   },
   {
