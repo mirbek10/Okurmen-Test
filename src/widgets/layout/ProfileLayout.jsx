@@ -1,18 +1,20 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/shared/ui/LoadingSpinner";
-import { 
-  User, 
-  BookOpen, 
-  Trophy, 
-  LogOut, 
+import {
+  User,
+  BookOpen,
+  Trophy,
+  LogOut,
   LayoutDashboard,
-  History
+  History,
 } from "lucide-react";
+import Cookies from "js-cookie";
 
 export default function ProfileLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -20,77 +22,104 @@ export default function ProfileLayout() {
   }, [location.pathname]);
 
   const menuItems = [
-    { id: "profile", label: "Мой профиль", icon: <User size={20} />, href: "/user/profile" },
-    { id: "test", label: "Тренировка", icon: <BookOpen size={20} />, href: "/user/tests" },
-    { id: "history", label: "История", icon: <History size={20} />, href: "/user/history" },
-    { id: "leaderboard", label: "Лидерборд", icon: <Trophy size={20} />, href: "/user/leaderboard" },
+    {
+      id: "profile",
+      label: "Профиль",
+      icon: <User size={20} />,
+      href: "/user/profile",
+    },
+    {
+      id: "test",
+      label: "Тесты",
+      icon: <BookOpen size={20} />,
+      href: "/user/tests",
+    },
+    {
+      id: "history",
+      label: "История",
+      icon: <History size={20} />,
+      href: "/user/history",
+    },
+    {
+      id: "leaderboard",
+      label: "Рейтинг",
+      icon: <Trophy size={20} />,
+      href: "/user/leaderboard",
+    },
   ];
 
-  const activeTab = menuItems.find(item => location.pathname.includes(item.href))?.id || "profile";
+  const activeTab =
+    menuItems.find((item) => location.pathname.includes(item.href))?.id ||
+    "profile";
+
+  const handleLogout = () => {
+    navigate("/");
+    Cookies.remove("userToken");
+    Cookies.remove("user");
+    window.location.reload();
+  };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-800">
-      
-      {/* SIDEBAR */}
-      <aside className="w-20 md:w-72 bg-white border-r border-slate-200 flex flex-col sticky top-0 h-screen transition-all duration-300">
-        
-        {/* Логотип */}
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans text-slate-800">
+      {/* --- DESKTOP SIDEBAR (только для больших экранов) --- */}
+      <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen transition-all duration-300">
         <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200 shrink-0">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
             <LayoutDashboard size={24} />
           </div>
-          <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent hidden md:block">
+          <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
             Student Portal
           </span>
         </div>
 
-        {/* Навигация */}
         <nav className="flex-1 px-4 py-6 space-y-2">
           {menuItems.map((item) => (
             <Link
               key={item.id}
               to={item.href}
-              onClick={() => {
-                if (location.pathname !== item.href) setIsLoading(true);
-              }}
               className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group ${
                 activeTab === item.id
                   ? "bg-indigo-50 text-indigo-600 shadow-sm"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  : "text-slate-500 hover:bg-slate-50"
               }`}
             >
-              <div className={`${activeTab === item.id ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"}`}>
-                {item.icon}
-              </div>
-              <span className="font-bold text-sm hidden md:block">
-                {item.label}
-              </span>
-              
-              {/* Активный индикатор для десктопа */}
+              {item.icon}
+              <span className="font-bold text-sm">{item.label}</span>
               {activeTab === item.id && (
-                <div className="ml-auto w-1.5 h-1.5 bg-indigo-600 rounded-full hidden md:block" />
+                <div className="ml-auto w-1.5 h-1.5 bg-indigo-600 rounded-full" />
               )}
             </Link>
           ))}
         </nav>
 
-        {/* Футер сайдбара */}
         <div className="p-4 border-t border-slate-100">
-          <button className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all font-bold text-sm">
+          <button
+            className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all font-bold text-sm"
+            onClick={handleLogout}
+          >
             <LogOut size={20} />
-            <span className="hidden md:block">Выйти</span>
+            <span>Выйти</span>
           </button>
         </div>
       </aside>
 
-      {/* ОСНОВНОЙ КОНТЕНТ */}
-      <main className="flex-1 overflow-y-auto relative">
-        {/* Хедер контентной части */}
-        <header className="sticky top-0 z-20 bg-[#F8FAFC]/80 backdrop-blur-md border-b border-slate-100 px-8 py-4 flex justify-between items-center md:hidden">
-            <span className="text-lg font-bold text-indigo-600">Portal</span>
-            {/* Здесь можно добавить мобильное меню (бургер) */}
-        </header>
+      {/* --- MOBILE HEADER (только до 768px) --- */}
+      <header className="md:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-slate-100 px-5 py-3 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shadow-md shadow-indigo-100">
+            <LayoutDashboard size={18} />
+          </div>
+          <span className="font-black text-slate-800 tracking-tight">
+            Student Portal
+          </span>
+        </div>
+        <div className="w-8 h-8 bg-slate-100 rounded-full border border-slate-200 flex items-center justify-center text-slate-500">
+          <User size={16} />
+        </div>
+      </header>
 
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1 relative pb-24 md:pb-0 overflow-x-hidden">
         <div className="p-4 md:p-12 max-w-5xl mx-auto">
           {isLoading ? (
             <div className="flex justify-center items-center h-[60vh]">
@@ -103,9 +132,46 @@ export default function ProfileLayout() {
           )}
         </div>
 
-        {/* Декоративные пятна фона */}
-        <div className="absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-100/30 rounded-full blur-[120px]" />
+        {/* Декоративное пятно (только на десктопе, чтобы не мешать на мобилках) */}
+        <div className="hidden md:block absolute top-0 right-0 -z-10 w-[500px] h-[500px] bg-indigo-100/30 rounded-full blur-[120px]" />
       </main>
+
+      {/* --- MOBILE BOTTOM NAVIGATION (фиксированная внизу) --- */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-t border-slate-100 px-2 pb-safe-area-inset-bottom">
+        <div className="flex items-center justify-around py-2 max-w-md mx-auto">
+          {menuItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.href}
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
+                activeTab === item.id ? "text-indigo-600" : "text-slate-400"
+              }`}
+            >
+              <div
+                className={`p-1 rounded-lg transition-colors ${
+                  activeTab === item.id ? "bg-indigo-50" : ""
+                }`}
+              >
+                {item.icon}
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-tight">
+                {item.label}
+              </span>
+            </Link>
+          ))}
+          <button
+            className="flex flex-col items-center gap-1 px-3 py-2 text-slate-400"
+            onClick={handleLogout}
+          >
+            <div className="p-1">
+              <LogOut size={20} />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-tight">
+              Выйти
+            </span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }
