@@ -13,13 +13,17 @@ import {
   ChevronRight,
   Camera
 } from "lucide-react";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 export function UserDashboard() {
-  const { user, fetchUserProfile, updateAvatar, loading } = useAuthStore();
+  const { user, fetchUserProfile, updateAvatar, loading, response, error } = useAuthStore();
   
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [practiceHistory, setPracticeHistory] = useState([]);
+  const navigate = useNavigate()
 
   // Загрузка профиля и локальной истории
   useEffect(() => {
@@ -30,7 +34,16 @@ export function UserDashboard() {
     // Получаем историю из localStorage
     const savedHistory = JSON.parse(localStorage.getItem("practice_history") || "[]");
     setPracticeHistory(savedHistory);
-  }, [user, fetchUserProfile]);
+    console.log(response);
+    
+
+    if(response.status === 404 || error) {
+      toast.error("Пользователь не найден. Пожалуйста, войдите снова.");
+      window.location.href = "/auth/login"
+      Cookies.remove("userToken")
+    }
+
+  }, [user, fetchUserProfile, response, error]);
 
   const handleAvatarUrlUpdate = async (e) => {
     e.preventDefault();
@@ -48,6 +61,8 @@ export function UserDashboard() {
       setIsUpdating(false);
     }
   };
+
+
 
   const clearHistory = () => {
     localStorage.removeItem("practice_history");

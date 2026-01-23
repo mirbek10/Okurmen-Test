@@ -43,6 +43,7 @@ interface AuthState {
     token: string | null;
     loading: boolean;
     error: string | null;
+    response: any;
 
     register: (username: string, email: string, password: string) => Promise<void>;
     login: (identifier: string, password: string) => Promise<void>;
@@ -57,6 +58,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     token: null,
     loading: false,
     error: null,
+    response: [],
 
     register: async (username, email, password) => {
         set({ loading: true, error: null });
@@ -70,7 +72,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             set({
                 user: response.data.success ? response.data.user : null,
                 token: response.data.token || null,
-                loading: false
+                loading: false,
             });
 
             // Store token in cookies
@@ -125,7 +127,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
             set({
                 user: response.data.success ? response.data.user : null,
-                loading: false
+                loading: false,
+                response: response
             });
         } catch (error: any) {
             set({
