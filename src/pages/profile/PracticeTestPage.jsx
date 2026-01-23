@@ -1,11 +1,10 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
   CheckCircle,
-  AlertTriangle,
   Clock,
   Layout,
   Database
@@ -55,7 +54,7 @@ export const PracticeTestPage = () => {
 
     // Список категорий для фильтрации
     const frontCategories = ["html", "javascript", "react", "typescript", "mixed"];
-    const backCategories = ["nodejs", "mongodb", "postgresql", "python", "backend"]; // пример
+    const backCategories = ["nodejs", "mongodb", "postgresql", "python", "backend"];
 
     let filtered;
     if (type === "front") {
@@ -73,7 +72,6 @@ export const PracticeTestPage = () => {
 
     const shuffled = shuffleArray(filtered).slice(0, 20);
     setTestQuestions(shuffled);
-    // Можно задать время динамически: например 1 минута на вопрос
     setTimeLeft(shuffled.length * 60); 
   }, [questions, questionsLoading, type]);
 
@@ -102,10 +100,10 @@ export const PracticeTestPage = () => {
   const finishTest = useCallback(() => {
     setIsFinished(true);
     
-    // Рассчитываем результат локально
+    // ИСПРАВЛЕНИЕ: используем индекс вместо ID
     let correctCount = 0;
-    testQuestions.forEach(q => {
-      const selectedIdx = answers[q.id];
+    testQuestions.forEach((q, index) => {
+      const selectedIdx = answers[index]; // Используем индекс вопроса
       if (selectedIdx !== undefined && q.options[selectedIdx] === q.answer) {
         correctCount++;
       }
@@ -187,11 +185,22 @@ export const PracticeTestPage = () => {
 
           <div className="space-y-3">
             {currentQuestion.options.map((option, index) => {
-              const isSelected = answers[currentQuestion.id] === index;
+              // ИСПРАВЛЕНИЕ: используем currentQuestionIndex как ключ
+              const isSelected = answers[currentQuestionIndex] === index;
               return (
                 <button
                   key={index}
-                  onClick={() => setAnswers({ ...answers, [currentQuestion.id]: index })}
+                  onClick={() => {
+                    console.log('=== Выбор ответа ===');
+                    console.log('Индекс вопроса:', currentQuestionIndex);
+                    console.log('Индекс опции:', index);
+                    
+                    setAnswers(prev => {
+                      const updated = { ...prev, [currentQuestionIndex]: index };
+                      console.log('Обновленные ответы:', updated);
+                      return updated;
+                    });
+                  }}
                   className={`w-full flex items-center p-4 rounded-2xl border-2 transition-all text-left ${
                     isSelected ? "border-indigo-500 bg-indigo-50 shadow-sm" : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
                   }`}
@@ -202,6 +211,7 @@ export const PracticeTestPage = () => {
                   <span className={`text-lg ${isSelected ? "text-indigo-900 font-medium" : "text-slate-600"}`}>
                     {option}
                   </span>
+                  {isSelected && <CheckCircle className="text-indigo-600 ml-auto" size={20} />}
                 </button>
               );
             })}
