@@ -20,7 +20,7 @@ export const useQuestionStore = create((set, get) => ({
     loading: false,
     uploading: false,
     error: null,
-
+    allCategories: [],
     // Состояние фильтров
     search: '',
     category: '',
@@ -50,7 +50,7 @@ export const useQuestionStore = create((set, get) => ({
 
             const response = await axiosAdmin.get('/questions', { params: requestParams });
 
-            const { questions, total, totalPages, hasMore, page } = response.data;
+            const { questions, total, totalPages, hasMore, page, allCategories } = response.data;
 
             // ИСПРАВЛЕНИЕ: Не фильтруйте строго по 4 опциям, 
             // если не уверены, что в базе их всегда 4.
@@ -69,7 +69,8 @@ export const useQuestionStore = create((set, get) => ({
                 page,
                 search: requestParams.search,
                 category: requestParams.category,
-                loading: false
+                loading: false,
+                allCategories: allCategories || state.allCategories
             });
         } catch (error) {
             console.error("Fetch error:", error);
