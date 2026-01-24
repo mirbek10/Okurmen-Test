@@ -12,13 +12,13 @@ import { WaitingList } from "../pages/user/WaitingList.jsx";
 import { StudentTestPage } from "@/pages/user/Test";
 import Result from "@/pages/admin/result/Result";
 import { QuestionsPage } from "@/pages/admin/question/Qestion";
-import { Auth } from "@/pages/auth/Auth";
 import { UserDashboard } from "@/pages/profile/UserDashboard";
 import ProfileLayout from "@/widgets/layout/ProfileLayout";
 import { PracticeSelection } from "@/pages/profile/Test";
 import { Lider } from "@/pages/profile/Lider";
 import { PracticeTestPage } from "@/pages/profile/PracticeTestPage";
 import { PracticeHistoryPage } from "@/pages/profile/PracticeHistoryPage";
+import { CreatorPage } from "@/pages/profile/CreatorPage";
 
 export const router = createBrowserRouter([
   {
@@ -52,10 +52,6 @@ export const router = createBrowserRouter([
     element: <ProfileLayout />,
     children: [
       {
-        path: "auth",
-        element: <Auth />,
-      },
-      {
         path: "profile",
         element: <UserDashboard />,
       },
@@ -70,6 +66,10 @@ export const router = createBrowserRouter([
       {
         path:"history",
         element:<PracticeHistoryPage/>
+      },
+      {
+        path:"creator",
+        element:<CreatorPage/>
       }
     ],
   },

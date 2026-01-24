@@ -43,6 +43,10 @@ export function UserDashboard() {
       Cookies.remove("userToken")
     }
 
+    if(response.status === 200) {
+      localStorage.setItem("user", JSON.stringify(user));
+    }
+
   }, [user, fetchUserProfile, response, error]);
 
   const handleAvatarUrlUpdate = async (e) => {
@@ -84,7 +88,6 @@ export function UserDashboard() {
       {/* ОСНОВНАЯ КАРТОЧКА ПРОФИЛЯ */}
       <div className="bg-white rounded-[3rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-slate-100">
         <div className="flex flex-col items-center">
-          
           {/* Аватар */}
           <div className="relative">
             <div className="w-32 h-32 md:w-44 md:h-44 rounded-full p-1.5 bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 shadow-2xl overflow-hidden">
@@ -172,7 +175,8 @@ export function UserDashboard() {
                   </div>
                   <div>
                     <div className="font-black text-slate-700 uppercase text-xs tracking-widest mb-1">
-                      {item.type === 'front' ? 'Frontend' : 'Backend'} Practice
+                      {item.type === 'front' ? 'Frontend' : 
+                      item.type === 'back' ? 'Backend' : item.category} Practice
                     </div>
                     <div className="text-sm text-slate-400 font-medium">
                       {new Date(item.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
