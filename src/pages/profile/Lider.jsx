@@ -120,7 +120,7 @@ export function Lider() {
 
       {/* TOP 3 CARDS - Адаптивная сетка */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-8">
-        {users.slice(0, 3).map((user) => {
+        {topUsers.slice(0, 3).map((user) => {
           const style = getRankStyles(user.rank);
           return (
             <div
