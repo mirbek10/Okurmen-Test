@@ -62,7 +62,7 @@ export const useQuestionStore = create((set, get) => ({
             const cleaned = cleanQuestions(validOnes);
 
             set({
-                questions: cleaned,
+                questions: validOnes,
                 total,
                 totalPages,
                 hasMore,
