@@ -125,7 +125,7 @@ export const QuestionsPage = () => {
 
               <div className="flex flex-wrap justify-between items-center gap-4 px-2">
                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {['', 'html', 'javascript', 'react', 'typescript', 'Django', 'Основа',].map(cat => (
+                  {['', 'html', 'javascript', 'react', 'typescript', 'Django', 'Основа', "Продвинутый"].map(cat => (
                     <button
                       key={cat}
                       onClick={() => { setCategoryFilter(cat); filterByCategory(cat); }}

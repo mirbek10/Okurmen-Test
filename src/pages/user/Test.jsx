@@ -373,6 +373,19 @@ export const StudentTestPage = () => {
     mixed: "Смешанный тест",
   };
 
+  const handleResetTest = useCallback(() => {
+  // 1. Удаляем указатель на текущую сессию
+  localStorage.removeItem(`test_session_${categoryId}`);
+  
+  // 2. Если есть ID сессии, удаляем и её данные
+  if (testSessionId) {
+    localStorage.removeItem(testSessionId);
+  }
+  
+  // Больше ничего делать не нужно, window.location.reload() в FocusGuard 
+  // заставит компонент создаться заново и сгенерировать новые вопросы.
+}, [categoryId, testSessionId]);
+
   if (loading || questionsLoading)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -427,7 +440,7 @@ export const StudentTestPage = () => {
 
   return (
     <>
-      <FocusGuard />
+      <FocusGuard reload={() => handleResetTest()} isTestActive={!isSubmitting && testQuestions.length > 0} />
       <div className="min-h-screen bg-gray-50 py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
