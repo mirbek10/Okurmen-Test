@@ -1,34 +1,79 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { ShieldAlert, RefreshCw } from "lucide-react";
 
-export default function FocusGuard({reload}) {
-  const [showModal, setShowModal] = useState(false);
+export default function FocusGuard({ reload, isTestActive }) {
+  const [violation, setViolation] = useState(false);
+  const hasTriggered = useRef(false);
 
   useEffect(() => {
-    const onBlur = () => {
-      setShowModal(true);
+    if (!isTestActive) return;
+
+    const triggerViolation = () => {
+      if (hasTriggered.current) return;
+      hasTriggered.current = true;
+      
+      // Сначала показываем модалку
+      setViolation(true);
+      
+      // Выполняем логику сброса (удаление из localStorage), которую мы передали
+      if (reload) {
+        reload();
+      }
+
+      // Через 2.5 секунды перезагружаем страницу
       setTimeout(() => {
         window.location.reload();
-        reload();
-      }, 1500);
+      }, 2500);
     };
 
-    window.addEventListener("blur", onBlur);
-    return () => window.removeEventListener("blur", onBlur);
-  }, []);
+    const handleKeydown = (e) => {
+      const isInspector = 
+        e.key === "F12" || 
+        (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C")) ||
+        (e.ctrlKey && e.key === "u");
 
-  if (!showModal) return null;
+      if (isInspector) {
+        e.preventDefault();
+        triggerViolation();
+      }
+    };
+
+    const handleContextMenu = (e) => {
+      e.preventDefault(); // Просто блокируем ПКМ без наказания
+    };
+
+    const onBlur = () => {
+      triggerViolation(); // Наказываем за смену вкладки
+    };
+
+    window.addEventListener("keydown", handleKeydown);
+    window.addEventListener("contextmenu", handleContextMenu);
+    window.addEventListener("blur", onBlur);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("contextmenu", handleContextMenu);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [isTestActive, reload]);
+
+  if (!violation) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-[9999]">
-      <div className="bg-blue-600 text-white px-8 py-6 rounded-xl shadow-2xl w-[340px] text-center">
-        <h2 className="text-xl font-semibold mb-2">
-          Внимание!
-        </h2>
-        <p className="text-sm opacity-90">
-          Нельзя открывать новые страницы.  
-          Вы проходите тест.
+    <div className="fixed inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)] backdrop-blur-xl z-[9999] p-4">
+      <div className="bg-white rounded-[2.5rem] p-10 shadow-2xl w-full max-w-[400px] text-center border-b-8 border-red-600 animate-in zoom-in-95">
+        <div className="w-20 h-20 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <ShieldAlert size={40} />
+        </div>
+        <h2 className="text-2xl font-black text-slate-900 mb-2 uppercase tracking-tighter">Нарушение</h2>
+        <p className="text-slate-500 mb-6 font-medium">
+          Попытка обхода защиты. Прогресс аннулирован, вопросы будут заменены.
         </p>
+        <div className="flex items-center justify-center gap-3 py-3 bg-red-50 rounded-xl text-red-600 font-bold">
+          <RefreshCw size={18} className="animate-spin" />
+          <span>Обновление теста...</span>
+        </div>
       </div>
     </div>
   );
