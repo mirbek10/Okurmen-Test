@@ -41,11 +41,11 @@ export const useLeaderboardStore = create((set, get) => ({
   // Получение всех пользователей с пагинацией
   fetchUsers: async () => {
     set({ loading: true, error: null });
-    
+
     try {
       const { page, limit } = get().pagination;
       const { search, sortBy, sortOrder } = get().filters;
-      
+
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
@@ -55,7 +55,7 @@ export const useLeaderboardStore = create((set, get) => ({
       }).toString();
 
       const response = await axiosUser.get(`users?${params}`);
-      
+
       if (response.data.success) {
         set({
           users: response.data.users,
@@ -79,12 +79,12 @@ export const useLeaderboardStore = create((set, get) => ({
   },
 
   // Получение топ пользователей
-  fetchTopUsers: async (limit = 10) => {
+  fetchTopUsers: async (limit = 3) => {
     set({ loading: true, error: null });
-    
+
     try {
       const response = await axiosUser.get(`users/top?limit=${limit}`);
-      
+
       if (response.data.success) {
         set({
           topUsers: response.data.users,
