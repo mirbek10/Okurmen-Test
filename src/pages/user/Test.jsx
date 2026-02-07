@@ -15,7 +15,6 @@ import FocusGuard from "@/shared/lib/focusGuard/FocusGuard";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 
-// Функция для перемешивания массива (алгоритм Фишера-Йетса)
 const shuffleArray = (array) => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {

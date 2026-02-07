@@ -74,6 +74,29 @@ const availableTests = {
         description: "ООП, декораторы и генераторы", 
         category: "Продвинутый"
       }
+    ],
+    java:[
+      { 
+        id: "Java основы", 
+        name: "Основы Java", 
+        icon: <BookOpen className="text-amber-500" />, 
+        description: "Синтаксис, типы данных и циклы", 
+        category: "java основа"
+      },
+      { 
+        id: "Java продвинутый", 
+        name: "Продвинутый Java", 
+        icon: <Sparkles className="text-purple-500" />, 
+        description: "ООП, декораторы и генераторы", 
+        category: "java продвинутый"
+      },
+      { 
+        id: "spring", 
+        name: "Spring", 
+        icon: <Server className="text-emerald-500" />, 
+        description: "Spring Framework", 
+        category: "spring"
+      }
     ]
   };
   const modes = [
@@ -112,6 +135,18 @@ const availableTests = {
       button: 'bg-emerald-600',
       action: () => setActiveMode('back'),
       stats: `${availableTests.back.length} темы доступно`
+    },
+    {
+      id: 'java',
+      title: 'Java Developer',
+      subtitle: 'Тренировка',
+      description: 'Java основа, Java продвинутый, Spring.',
+      icon: <Server className="w-8 h-8 text-amber-500" />,
+      bg: 'bg-amber-50',
+      border: 'hover:border-amber-400',
+      button: 'bg-amber-500',
+      action: () => setActiveMode('java'),
+      stats: `${availableTests.java.length} темы доступно`
     }
   ];
 
