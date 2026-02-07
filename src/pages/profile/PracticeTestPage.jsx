@@ -52,6 +52,7 @@ export const PracticeTestPage = () => {
 
     const frontCategories = ["html", "javascript", "react", "typescript", "mixed"];
     const backCategories = ["nodejs", "mongodb", "postgresql", "python", "backend"];
+    const javaCategories = ["java основа", "java продвинутый", "spring"];
 
     let filtered;
 

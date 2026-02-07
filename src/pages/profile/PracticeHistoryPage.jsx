@@ -35,7 +35,7 @@ export function PracticeHistoryPage() {
       localStorage.removeItem("practice_history");
       setHistory([]);
     }
-  };
+  };  
 
   const filteredHistory = history.filter((item) => {
     if (filter === "all") return true;
@@ -77,12 +77,12 @@ export function PracticeHistoryPage() {
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-8">
           <StatCard icon={<Clock size={16} />} label="Тестов" value={stats.total} />
           <StatCard icon={<BarChart2 size={16} />} label="Средний" value={`${stats.avgScore}%`} color="text-indigo-600" />
-          <StatCard 
-            icon={<CheckCircle2 size={16} />} 
-            label="Лучший" 
-            value={`${stats.bestScore}%`} 
+          <StatCard
+            icon={<CheckCircle2 size={16} />}
+            label="Лучший"
+            value={`${stats.bestScore}%`}
             color="text-emerald-500"
-            className="col-span-2 md:col-span-1" 
+            className="col-span-2 md:col-span-1"
           />
         </div>
 
@@ -91,15 +91,16 @@ export function PracticeHistoryPage() {
           <div className="p-2.5 bg-slate-200/50 rounded-xl text-slate-500 shrink-0">
             <Filter size={18} />
           </div>
-          {["all", "html", "react", "javascript", "typescript"].map((id) => (
+          {["all", "html", "react", "javascript", "typescript", "основы Python", "продвинутый Python", "django",
+            "Java основы", "Java продвинутый", "Spring",
+          ].map((id) => (
             <button
               key={id}
               onClick={() => setFilter(id)}
-              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap border ${
-                filter === id
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap border ${filter === id
                   ? "bg-slate-800 text-white border-slate-800 shadow-sm"
                   : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
-              }`}
+                }`}
             >
               {id === "all" ? "Все" : id.toUpperCase()}
             </button>
@@ -118,11 +119,10 @@ export function PracticeHistoryPage() {
                 className="bg-white border border-slate-100 p-4 md:p-5 rounded-[1.5rem] md:rounded-[2rem] flex items-center justify-between gap-3 hover:shadow-md transition-all active:scale-[0.98] cursor-pointer group"
               >
                 <div className="flex items-center gap-3 md:gap-5 min-w-0">
-                  <div className={`p-3 md:p-4 rounded-2xl shrink-0 ${
-                    item.type === "front" || item.category === "front" 
-                      ? "bg-blue-50 text-blue-500" 
+                  <div className={`p-3 md:p-4 rounded-2xl shrink-0 ${item.type === "front" || item.category === "front"
+                      ? "bg-blue-50 text-blue-500"
                       : "bg-emerald-50 text-emerald-500"
-                  }`}>
+                    }`}>
                     {item.type === "front" || item.category === "front" ? <Monitor size={22} /> : <Database size={22} />}
                   </div>
                   <div className="min-w-0">
@@ -141,9 +141,8 @@ export function PracticeHistoryPage() {
 
                 <div className="flex items-center gap-3 md:gap-6 shrink-0">
                   <div className="text-right">
-                    <div className={`text-xl md:text-2xl font-black ${
-                      item.percent >= 80 ? "text-emerald-500" : item.percent >= 50 ? "text-amber-500" : "text-red-500"
-                    }`}>
+                    <div className={`text-xl md:text-2xl font-black ${item.percent >= 80 ? "text-emerald-500" : item.percent >= 50 ? "text-amber-500" : "text-red-500"
+                      }`}>
                       {item.percent}%
                     </div>
                   </div>
@@ -175,12 +174,12 @@ function TestDetailsModal({ test, onClose }) {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-start md:items-center justify-center p-0 md:p-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
-      <div 
-        onClick={(e) => e.stopPropagation()} 
+      <div
+        onClick={(e) => e.stopPropagation()}
         className="bg-white rounded-t-[2rem] md:rounded-[2.5rem] w-full max-w-3xl max-h-[92vh] md:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-in slide-in-from-bottom md:slide-in-from-bottom-0 md:zoom-in-95 duration-300"
       >
         {/* Хедер модалки */}
@@ -243,11 +242,11 @@ function TestDetailsModal({ test, onClose }) {
 }
 
 function QuestionCard({ item }) {
-  const statusConfig = item.isCorrect 
-    ? { border: 'border-emerald-100', bg: 'bg-emerald-50/30', text: 'text-emerald-700', icon: <CheckCircle size={16}/>, label: 'Верно' }
-    : item.wasAnswered 
-    ? { border: 'border-red-100', bg: 'bg-red-50/30', text: 'text-red-700', icon: <XCircle size={16}/>, label: 'Ошибка' }
-    : { border: 'border-orange-100', bg: 'bg-orange-50/30', text: 'text-orange-700', icon: <AlertCircle size={16}/>, label: 'Пропуск' };
+  const statusConfig = item.isCorrect
+    ? { border: 'border-emerald-100', bg: 'bg-emerald-50/30', text: 'text-emerald-700', icon: <CheckCircle size={16} />, label: 'Верно' }
+    : item.wasAnswered
+      ? { border: 'border-red-100', bg: 'bg-red-50/30', text: 'text-red-700', icon: <XCircle size={16} />, label: 'Ошибка' }
+      : { border: 'border-orange-100', bg: 'bg-orange-50/30', text: 'text-orange-700', icon: <AlertCircle size={16} />, label: 'Пропуск' };
 
   return (
     <div className={`rounded-3xl p-4 border-2 ${statusConfig.border} ${statusConfig.bg} `}>
@@ -258,11 +257,11 @@ function QuestionCard({ item }) {
         </span>
       </div>
       <h3 className="text-sm md:text-base font-bold text-slate-800 leading-snug mb-4">{item.question}</h3>
-      
+
       {item.wasAnswered && item.selectedAnswer && (
         <div className={`p-3 rounded-xl border ${item.isCorrect ? 'border-emerald-200 bg-white' : 'border-red-200 bg-white'}`}>
-           <p className={`text-[10px] font-bold uppercase mb-1 ${item.isCorrect ? 'text-emerald-500' : 'text-red-500'}`}>Ваш выбор:</p>
-           <p className="text-sm font-bold text-slate-700">{item.selectedAnswer}</p>
+          <p className={`text-[10px] font-bold uppercase mb-1 ${item.isCorrect ? 'text-emerald-500' : 'text-red-500'}`}>Ваш выбор:</p>
+          <p className="text-sm font-bold text-slate-700">{item.selectedAnswer}</p>
         </div>
       )}
     </div>
