@@ -10,8 +10,8 @@ import {
   LayoutDashboard,
   History,
   Code2,
-  Menu, // Добавили иконку меню
-  X    // Добавили иконку закрытия
+  Menu,
+  X    
 } from "lucide-react";
 import Cookies from "js-cookie";
 
@@ -19,11 +19,11 @@ export default function ProfileLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Состояние для меню
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
   useEffect(() => {
     setIsLoading(false);
-    setIsMobileMenuOpen(false); // Закрываем меню при смене страницы
+    setIsMobileMenuOpen(false); 
   }, [location.pathname]);
 
   const menuItems = [
@@ -34,7 +34,6 @@ export default function ProfileLayout() {
     { id: "creator", label: "Создатель", icon: <Code2 size={20} />, href: "/user/creator" }
   ];
 
-  // Основные кнопки для нижнего бара (3 штуки)
   const mainNavItems = menuItems.slice(0, 3);
   
   const activeTab = menuItems.find((item) => location.pathname.includes(item.href))?.id || "profile";
@@ -49,7 +48,6 @@ export default function ProfileLayout() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans text-slate-800">
       
-      {/* --- DESKTOP SIDEBAR --- */}
       <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen">
         <div className="p-6 flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
@@ -83,7 +81,6 @@ export default function ProfileLayout() {
         </div>
       </aside>
 
-      {/* --- MOBILE HEADER --- */}
       <header className="md:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-slate-100 px-5 py-3 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
@@ -93,7 +90,6 @@ export default function ProfileLayout() {
         </div>
       </header>
 
-      {/* --- MAIN CONTENT --- */}
       <main className="flex-1 relative pb-24 md:pb-0 overflow-x-hidden">
         <div className="p-4 md:p-12 max-w-5xl mx-auto">
           {isLoading ? (
@@ -104,7 +100,6 @@ export default function ProfileLayout() {
         </div>
       </main>
 
-      {/* --- MOBILE FULL MENU OVERLAY --- */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsMobileMenuOpen(false)}>
           <div 
@@ -145,7 +140,6 @@ export default function ProfileLayout() {
         </div>
       )}
 
-      {/* --- MOBILE BOTTOM NAVIGATION --- */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 pb-safe">
         <div className="flex items-center justify-around py-2">
           {mainNavItems.map((item) => (
@@ -163,7 +157,6 @@ export default function ProfileLayout() {
             </Link>
           ))}
 
-          {/* Кнопка "Еще" */}
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all ${

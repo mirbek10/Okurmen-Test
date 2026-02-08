@@ -13,15 +13,11 @@ export default function FocusGuard({ reload, isTestActive }) {
       if (hasTriggered.current) return;
       hasTriggered.current = true;
       
-      // Сначала показываем модалку
       setViolation(true);
       
-      // Выполняем логику сброса (удаление из localStorage), которую мы передали
       if (reload) {
         reload();
       }
-
-      // Через 2.5 секунды перезагружаем страницу
       setTimeout(() => {
         window.location.reload();
       }, 2500);
@@ -40,11 +36,11 @@ export default function FocusGuard({ reload, isTestActive }) {
     };
 
     const handleContextMenu = (e) => {
-      e.preventDefault(); // Просто блокируем ПКМ без наказания
+      e.preventDefault();
     };
 
     const onBlur = () => {
-      triggerViolation(); // Наказываем за смену вкладки
+      triggerViolation();
     };
 
     window.addEventListener("keydown", handleKeydown);

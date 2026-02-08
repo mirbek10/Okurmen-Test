@@ -4,7 +4,7 @@ import { useAuthStore } from "@/app/stores/auth/authStore";
 import Cookies from "js-cookie";
 
 const Login = () => {
-  const [identifier, setIdentifier] = useState(""); // Can be username or email
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
   const { login, loading, error, clearError, token } = useAuthStore();
@@ -13,10 +13,8 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // Clear previous errors
     clearError();
 
-    // Validation
     if (!identifier.trim() || !password.trim()) {
       alert("Please fill in all fields.");
       return;
@@ -24,10 +22,8 @@ const Login = () => {
 
     try {
       await login(identifier, password);
-      // Login successful, redirect to dashboard or home
-      navigate("/user/profile"); // Adjust this route as needed
+      navigate("/user/profile");
     } catch (err) {
-      // Error is already handled by the store
       console.error("Login error:", err);
     }
   };
@@ -38,11 +34,10 @@ const Login = () => {
     }
   };
 
-  // Check if user is already logged in
   useEffect(() => {
     const userToken = Cookies.get("userToken");
     if (userToken) {
-      navigate("/user/profile"); // Redirect to dashboard if already logged in
+      navigate("/user/profile");
     }
   }, [navigate]);
 

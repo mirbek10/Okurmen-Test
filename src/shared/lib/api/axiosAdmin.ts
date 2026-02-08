@@ -1,6 +1,5 @@
 import axios from "axios";
 import Cookies from "js-cookie";
-// Создаём экземпляр axios
 export const axiosAdmin = axios.create({
   baseURL: "https://beckend-test-sqyj.onrender.com/api/",
   headers: {
@@ -8,7 +7,6 @@ export const axiosAdmin = axios.create({
     Accept: "*/*",
   },
 });
-
 
 axiosAdmin.interceptors.request.use((config) => {
 
@@ -19,7 +17,6 @@ axiosAdmin.interceptors.request.use((config) => {
     
   }
   
-
   return config;
 }, (error) => {
   return Promise.reject(error);

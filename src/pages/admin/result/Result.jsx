@@ -17,7 +17,6 @@ import { Link } from "react-router-dom";
 function Result() {
   const { tests, loading, error, getTests, deleteTest } =
     useAdminGetTestStore();
-  // Состояние для модалки
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedTest, setSelectedTest] = useState(null);
 

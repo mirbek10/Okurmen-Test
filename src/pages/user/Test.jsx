@@ -11,6 +11,7 @@ import {
 import { useSetAnswere } from "@/app/stores/user/setAnswer";
 import { useTestStatus } from "@/app/stores/user/getTestStatus";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
+import { useTestCategoryStore } from "@/app/stores/all/getTestCategory";
 import FocusGuard from "@/shared/lib/focusGuard/FocusGuard";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
@@ -24,7 +25,6 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-// Функция для генерации уникального ID теста на основе категории и студента
 const generateTestSessionId = (categoryId, studentId) => {
   const timestamp = Date.now();
   return `${categoryId}-${studentId}-${timestamp}`;
@@ -34,7 +34,6 @@ export const StudentTestPage = () => {
   const navigate = useNavigate();
   const { id: categoryId } = useParams();
 
-  // Сторы
   const { postAnswe, forcePostAnswere } = useSetAnswere();
   const { status, getStatus } = useTestStatus();
   const {
@@ -42,8 +41,8 @@ export const StudentTestPage = () => {
     fetchQuestions,
     loading: questionsLoading,
   } = useQuestionStore();
+  const { testCategories, fetchTestCategories } = useTestCategoryStore();
 
-  // Состояния
   const [loading, setLoading] = useState(true);
   const [testQuestions, setTestQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -53,7 +52,6 @@ export const StudentTestPage = () => {
   const [studentData, setStudentData] = useState(null);
   const [testSessionId, setTestSessionId] = useState(null);
 
-  // Получаем код доступа из localStorage
   const code = useMemo(() => {
     try {
       const storedCode = localStorage.getItem("code");
@@ -64,7 +62,6 @@ export const StudentTestPage = () => {
     }
   }, []);
 
-  // 1. Получение данных студента
   useEffect(() => {
     try {
       const userRaw = localStorage.getItem("user");
@@ -77,30 +74,31 @@ export const StudentTestPage = () => {
     }
   }, []);
 
-  // 2. Загрузка вопросов для выбранной категории
   useEffect(() => {
-    const loadQuestions = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
-        await fetchQuestions({
-          category: categoryId === "mixed" ? "" : categoryId,
-          limit: 9999,
-        });
+        await Promise.all([
+          fetchQuestions({
+            category: categoryId === "mixed" ? "" : categoryId,
+            limit: 9999,
+          }),
+          fetchTestCategories()
+        ]);
       } catch (err) {
-        console.error("Ошибка загрузки вопросов:", err);
-        setError("Не удалось загрузить вопросы для теста");
+        console.error("Ошибка загрузки данных:", err);
+        setError("Не удалось загрузить данные теста");
       } finally {
         setLoading(false);
       }
     };
 
     if (categoryId) {
-      loadQuestions();
+      loadData();
     }
-  }, [categoryId, fetchQuestions]);
+  }, [categoryId, fetchQuestions, fetchTestCategories]);
 
-  // 3. Формирование теста из 20 случайных вопросов
   useEffect(() => {
     if (questions.length === 0 || questionsLoading) return;
 
@@ -129,8 +127,7 @@ export const StudentTestPage = () => {
       ) {
         sessionId = savedSessionId;
         selectedQuestions = savedSessionData.questions;
-        
-        // Загружаем сохраненные ответы и индекс
+
         if (savedSessionData.answers) {
           setSelectedAnswers(savedSessionData.answers);
         }
@@ -158,7 +155,7 @@ export const StudentTestPage = () => {
             createdAt: new Date().toISOString(),
           })
         );
-        
+
         setSelectedAnswers({});
       }
 
@@ -170,7 +167,6 @@ export const StudentTestPage = () => {
     }
   }, [questions, questionsLoading, categoryId, studentData]);
 
-  // 4. Сохранение прогресса теста в localStorage
   useEffect(() => {
     if (!testSessionId || !testQuestions.length) return;
 
@@ -193,7 +189,6 @@ export const StudentTestPage = () => {
     saveProgress();
   }, [testSessionId, testQuestions, selectedAnswers, currentQuestionIndex, categoryId, studentData]);
 
-  // 5. ФУНКЦИЯ ОТПРАВКИ
   const submitTest = useCallback(
     async (finalAnswers, isAuto) => {
       if (isSubmitting || !testQuestions.length) return;
@@ -273,7 +268,6 @@ export const StudentTestPage = () => {
     ]
   );
 
-  // 6. ПОЛЛИНГ СТАТУСА
   useEffect(() => {
     if (!code || isSubmitting) return;
 
@@ -286,7 +280,6 @@ export const StudentTestPage = () => {
     return () => clearInterval(intervalId);
   }, [code, getStatus, isSubmitting]);
 
-  // 7. РЕАКЦИЯ НА ИЗМЕНЕНИЕ СТАТУСА
   useEffect(() => {
     if (status === "finished" && !isSubmitting) {
       console.log("Тест завершен удаленно. Авто-отправка ответов...");
@@ -294,20 +287,10 @@ export const StudentTestPage = () => {
     }
   }, [status, selectedAnswers, submitTest, isSubmitting]);
 
-  // Обработчики интерфейса
   const handleAnswerChange = (questionId, optionIndex) => {
-    console.log('=== Выбор ответа ===');
-    console.log('Question ID:', questionId);
-    console.log('Option Index:', optionIndex);
-    
     setSelectedAnswers(prev => {
       const updated = { ...prev };
       updated[questionId] = optionIndex;
-      
-      console.log('Предыдущие ответы:', prev);
-      console.log('Обновленные ответы:', updated);
-      console.log('Количество ответов:', Object.keys(updated).length);
-      
       return updated;
     });
   };
@@ -364,26 +347,20 @@ export const StudentTestPage = () => {
   const currentAnswer = questionId ? selectedAnswers[questionId] : undefined;
   const isLastQuestion = currentQuestionIndex === testQuestions.length - 1;
 
-  const categoryNames = {
-    html: "HTML/CSS",
-    javascript: "JavaScript",
-    react: "React/Redux",
-    typescript: "TypeScript",
-    mixed: "Смешанный тест",
+  const getCategoryName = () => {
+    if (!categoryId) return "Тест";
+    if (categoryId === "mixed") return "Смешанный тест";
+    return testCategories.find(c => c.category === categoryId)?.category || categoryId;
   };
 
+  const categoryDisplayName = getCategoryName();
+
   const handleResetTest = useCallback(() => {
-  // 1. Удаляем указатель на текущую сессию
-  localStorage.removeItem(`test_session_${categoryId}`);
-  
-  // 2. Если есть ID сессии, удаляем и её данные
-  if (testSessionId) {
-    localStorage.removeItem(testSessionId);
-  }
-  
-  // Больше ничего делать не нужно, window.location.reload() в FocusGuard 
-  // заставит компонент создаться заново и сгенерировать новые вопросы.
-}, [categoryId, testSessionId]);
+    localStorage.removeItem(`test_session_${categoryId}`);
+    if (testSessionId) {
+      localStorage.removeItem(testSessionId);
+    }
+  }, [categoryId, testSessionId]);
 
   if (loading || questionsLoading)
     return (
@@ -445,13 +422,12 @@ export const StudentTestPage = () => {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-2xl font-bold text-gray-800">
-                {categoryNames[categoryId] || "Тест"} | {testQuestions.length}{" "}
+                {categoryDisplayName} | {testQuestions.length}{" "}
                 вопросов
               </h1>
               <span
-                className={`text-sm font-medium ${
-                  status === "started" ? "text-green-600" : "text-red-600"
-                }`}
+                className={`text-sm font-medium ${status === "started" ? "text-green-600" : "text-red-600"
+                  }`}
               >
                 {status === "started" ? "● АКТИВЕН" : "● ЗАВЕРШЕНИЕ..."}
               </span>
@@ -474,7 +450,6 @@ export const StudentTestPage = () => {
             </div>
           </div>
 
-          {/* Текущий вопрос */}
           <div className="bg-white rounded-lg shadow-md p-6 border-2 border-gray-200 mb-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
@@ -505,11 +480,10 @@ export const StudentTestPage = () => {
                 return (
                   <div
                     key={`${questionId}-option-${optionIndex}`}
-                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
-                      isSelected
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
-                    }`}
+                    className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${isSelected
+                      ? "border-blue-500 bg-blue-50"
+                      : "border-gray-200 hover:border-blue-300 hover:bg-gray-50"
+                      }`}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -518,22 +492,20 @@ export const StudentTestPage = () => {
                   >
                     <div className="flex items-center">
                       <div
-                        className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${
-                          isSelected
-                            ? "border-blue-600 bg-blue-600"
-                            : "border-gray-400"
-                        }`}
+                        className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center ${isSelected
+                          ? "border-blue-600 bg-blue-600"
+                          : "border-gray-400"
+                          }`}
                       >
                         {isSelected && (
                           <div className="w-2 h-2 bg-white rounded-full"></div>
                         )}
                       </div>
                       <span
-                        className={`flex-1 ${
-                          isSelected
-                            ? "font-medium text-blue-900"
-                            : "text-gray-700"
-                        }`}
+                        className={`flex-1 ${isSelected
+                          ? "font-medium text-blue-900"
+                          : "text-gray-700"
+                          }`}
                       >
                         {option}
                       </span>
@@ -547,7 +519,6 @@ export const StudentTestPage = () => {
             </div>
           </div>
 
-          {/* Навигация */}
           <div className="flex items-center justify-between gap-4 mb-6">
             <button
               onClick={handlePrev}
@@ -578,7 +549,6 @@ export const StudentTestPage = () => {
             )}
           </div>
 
-          {/* Навигация по всем вопросам */}
           <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
             <h3 className="font-semibold text-gray-800 mb-4">
               Навигация по вопросам:
@@ -593,13 +563,12 @@ export const StudentTestPage = () => {
                   <button
                     key={qId}
                     onClick={() => goToQuestion(index)}
-                    className={`h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
-                      isCurrent
-                        ? "bg-blue-600 text-white ring-2 ring-blue-300"
-                        : isAnswered
+                    className={`h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${isCurrent
+                      ? "bg-blue-600 text-white ring-2 ring-blue-300"
+                      : isAnswered
                         ? "bg-green-100 text-green-700 border border-green-300 hover:bg-green-200"
                         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     {index + 1}
                   </button>
@@ -608,7 +577,6 @@ export const StudentTestPage = () => {
             </div>
           </div>
 
-          {/* Информация о тесте */}
           <div className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
             <h3 className="font-semibold text-gray-800 mb-2">
               📝 Информация о тесте:
@@ -616,7 +584,7 @@ export const StudentTestPage = () => {
             <ul className="text-sm text-gray-600 space-y-1">
               <li>
                 • Категория:{" "}
-                <span className="font-medium">{categoryNames[categoryId]}</span>
+                <span className="font-medium">{categoryDisplayName}</span>
               </li>
               <li>
                 • Всего вопросов:{" "}

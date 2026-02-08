@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
 import { toast } from "react-toastify";
+import { useTestCategoryStore } from "@/app/stores/all/getTestCategory";
 
 export const QuestionsPage = () => {
   const {
@@ -32,12 +33,15 @@ export const QuestionsPage = () => {
     setPage,
   } = useQuestionStore();
 
+  const { testCategories, fetchTestCategories } = useTestCategoryStore();
+
   const [file, setFile] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
   useEffect(() => {
     fetchQuestions();
+    fetchTestCategories();
   }, []);
 
   const handleUpload = async () => {
@@ -51,14 +55,12 @@ export const QuestionsPage = () => {
 
   return (
     <div className="min-h-screen bg-[#F1F5F9] text-slate-900 font-sans selection:bg-indigo-100">
-      {/* Декоративный фон */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-indigo-200/40 blur-[120px]" />
         <div className="absolute top-[60%] -right-[5%] w-[30%] h-[30%] rounded-full bg-violet-200/40 blur-[100px]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto p-4 md:p-8">
-        {/* Header */}
         <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -89,7 +91,6 @@ export const QuestionsPage = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Левая колонка - Инструменты */}
           <div className="lg:col-span-4 space-y-6">
             <section className="bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white shadow-xl shadow-slate-200/50">
               <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
@@ -137,9 +138,7 @@ export const QuestionsPage = () => {
             </section>
           </div>
 
-          {/* Правая колонка - Контент */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Toolbar */}
             <div className="bg-white/80 backdrop-blur-xl p-4 rounded-[2rem] border border-white shadow-lg shadow-slate-200/50 flex flex-col gap-4">
               <div className="relative">
                 <Search
@@ -161,16 +160,7 @@ export const QuestionsPage = () => {
                 <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                   {[
                     "",
-                    "html",
-                    "javascript",
-                    "react",
-                    "typescript",
-                    "Django",
-                    "Основа",
-                    "Продвинутый",
-                    "Java основы",
-                    "Java продвинутый",
-                    "Spring",
+                    ...testCategories.map((c) => c.category),
                   ].map((cat) => (
                     <button
                       key={cat}
@@ -179,10 +169,9 @@ export const QuestionsPage = () => {
                         filterByCategory(cat);
                       }}
                       className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all
-                        ${
-                          categoryFilter === cat
-                            ? "bg-slate-900 text-white shadow-lg"
-                            : "bg-white text-slate-500 hover:bg-indigo-50 border border-slate-100"
+                        ${categoryFilter === cat
+                          ? "bg-slate-900 text-white shadow-lg"
+                          : "bg-white text-slate-500 hover:bg-indigo-50 border border-slate-100"
                         }`}
                     >
                       {cat || "Все"}
@@ -212,7 +201,6 @@ export const QuestionsPage = () => {
               </div>
             </div>
 
-            {/* Список вопросов */}
             <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2 no-scrollbar">
               {loading ? (
                 <div className="flex flex-col items-center justify-center py-32 gap-4">
@@ -249,16 +237,15 @@ export const QuestionsPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {q.options.map((opt, i) => {
                         const isCorrect = opt === q.answer;
-                        const label = String.fromCharCode(65 + i); // A, B, C, D
+                        const label = String.fromCharCode(65 + i);
 
                         return (
                           <div
                             key={i}
                             className={`flex items-center gap-3 p-4 rounded-2xl border transition-all
-                              ${
-                                isCorrect
-                                  ? "bg-emerald-50 border-emerald-200 text-emerald-700 ring-1 ring-emerald-200"
-                                  : "bg-slate-50 border-slate-100 text-slate-600"
+                              ${isCorrect
+                                ? "bg-emerald-50 border-emerald-200 text-emerald-700 ring-1 ring-emerald-200"
+                                : "bg-slate-50 border-slate-100 text-slate-600"
                               }`}
                           >
                             <span

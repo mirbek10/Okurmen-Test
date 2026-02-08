@@ -3,7 +3,6 @@ import { axiosUser } from '@/shared/lib/api/axiosUser';
 
 
 export const useLeaderboardStore = create((set, get) => ({
-  // Состояние
   users: [],
   topUsers: [],
   loading: false,
@@ -22,12 +21,10 @@ export const useLeaderboardStore = create((set, get) => ({
     sortOrder: 'desc',
   },
 
-  // Действия
   setFilters: (filters) => {
     set((state) => ({
       filters: { ...state.filters, ...filters },
     }));
-    // Автоматически обновляем данные при изменении фильтров
     get().fetchUsers();
   },
 
@@ -38,7 +35,6 @@ export const useLeaderboardStore = create((set, get) => ({
     get().fetchUsers();
   },
 
-  // Получение всех пользователей с пагинацией
   fetchUsers: async () => {
     set({ loading: true, error: null });
 
@@ -78,7 +74,6 @@ export const useLeaderboardStore = create((set, get) => ({
     }
   },
 
-  // Получение топ пользователей
   fetchTopUsers: async (limit = 3) => {
     set({ loading: true, error: null });
 
@@ -106,7 +101,6 @@ export const useLeaderboardStore = create((set, get) => ({
     }
   },
 
-  // Сброс фильтров
   resetFilters: () => {
     set({
       filters: {
@@ -122,7 +116,6 @@ export const useLeaderboardStore = create((set, get) => ({
     get().fetchUsers();
   },
 
-  // Обновление данных (для polling или при действиях пользователя)
   refreshData: () => {
     get().fetchUsers();
     get().fetchTopUsers();

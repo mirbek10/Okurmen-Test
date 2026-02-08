@@ -25,13 +25,11 @@ export function UserDashboard() {
   const [practiceHistory, setPracticeHistory] = useState([]);
   const navigate = useNavigate()
 
-  // Загрузка профиля и локальной истории
   useEffect(() => {
     if (!user || Object.keys(user).length === 0) {
       fetchUserProfile();
     }
     
-    // Получаем историю из localStorage
     const savedHistory = JSON.parse(localStorage.getItem("practice_history") || "[]");
     setPracticeHistory(savedHistory);
     console.log(response);

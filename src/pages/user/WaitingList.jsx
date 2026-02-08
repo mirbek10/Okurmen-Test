@@ -8,21 +8,15 @@ import { toast } from "react-toastify";
 export const WaitingList = () => {
   const navigate = useNavigate();
 
-  // 1. ИСПРАВЛЕНИЕ: Деструктурируем данные из хука. Будем использовать их напрямую.
   const { loading, error, user, getStatus } = useUserGetStatus();
 
-  // Состояния для логики теста
-  const [testStatus, setTestStatus] = useState("waiting"); // "waiting" | "active"
+  const [testStatus, setTestStatus] = useState("waiting"); 
   
-  // Состояние для хранения ID студента и кода доступа
   const [credentials, setCredentials] = useState({
     studentId: null,
     code: null
   });
 
-  // --- ЭФФЕКТЫ (useEffect) ---
-
-  // 2. ИСПРАВЛЕНИЕ: Читаем localStorage только один раз при монтировании
   useEffect(() => {
     try {
       const studentDataRaw = localStorage.getItem("user");
@@ -38,11 +32,9 @@ export const WaitingList = () => {
             code: codeData
           });
         } else {
-          // Если данных нет, перенаправляем на вход
           navigate("/", { replace: true });
         }
       } else {
-        // Если данных нет в localStorage, перенаправляем на вход
         navigate("/", { replace: true });
       }
     } catch (e) {
@@ -51,36 +43,26 @@ export const WaitingList = () => {
     }
   }, [navigate]);
 
-  // 3. ИСПРАВЛЕНИЕ: Запрашиваем статус только когда есть credentials
   useEffect(() => {
     if (credentials.studentId && credentials.code) {
-      // ВАЖНО: Если ваш бэкенд не поддерживает WebSocket, вам может потребоваться
-      // периодический опрос (polling). Раскомментируйте этот блок, если нужно:
       
       const intervalId = setInterval(() => {
         getStatus(credentials.studentId, credentials.code);
-      }, 5000); // Опрос каждые 5 секунд
+      }, 5000); 
 
-      // Очистка интервала при размонтировании
       return () => clearInterval(intervalId);
       
     }
   }, [credentials, getStatus]);
 
-  // 4. КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Реагируем на изменение данных пользователя (user) с сервера
   useEffect(() => {
-    // ВАЖНО: Замените условие `user.status === 'test_started'` на то,
-    // которое реально приходит с вашего сервера для обозначения начала теста.
-    // Например: if (user?.activeTestId) или if (user?.isTestActive)
     if (user && user?.student.status === 'active' && testStatus === 'waiting') {
       console.log("Сервер подтвердил начало теста. Переход к тесту.");
       setTestStatus("active");
     }
   }, [user, testStatus]);
 
-  // 4.1. НОВОЕ: Обработка ошибки "студент не найден"
   useEffect(() => {
-    // Проверяем, есть ли ошибка 404 или сообщение о том, что студент не найден
     if (error) {
       const isNotFoundError = 
         error.includes('404') || 
@@ -89,23 +71,18 @@ export const WaitingList = () => {
         error.toLowerCase().includes('not found');
 
       if (isNotFoundError) {
-        // Показываем уведомление пользователю
         toast.error('Вы были удалены из теста или студент не найден. Вы будете перенаправлены на страницу входа.');
         
-        // Очищаем localStorage
         localStorage.removeItem("user");
         localStorage.removeItem("code");
         
-        // Перенаправляем на страницу входа
         navigate("/", { replace: true });
       }
     }
   }, [error, navigate]);
 
-  // 5. Логика перехода при активном статусе
   useEffect(() => {
     if (testStatus === "active" && user?.category) {
-        // Небольшая задержка перед переходом для отображения статуса "Удачи!"
         const timeoutId = setTimeout(() => {
              navigate(`/student-test/${user.category}`, { replace: true });
         }, 1500);
@@ -113,21 +90,13 @@ export const WaitingList = () => {
     }
   }, [testStatus, navigate, user]);
 
-  // --- ФУНКЦИИ ---
-
   const handleLogout = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("code");
-    // Используем navigate с replace для предотвращения возврата назад
     navigate("/", { replace: true });
   };
 
 
-  // --- РЕНДЕРИНГ ---
-
-
-
-  // Показываем экран загрузки, если идет первоначальный запрос и данных пользователя еще нет
   if (loading && !user && testStatus === 'waiting') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -140,7 +109,6 @@ export const WaitingList = () => {
     );
   }
 
-  // НОВОЕ: Показываем экран ошибки, если студент не найден
   if (error && (
     error.includes('404') || 
     error.includes('не найден') ||

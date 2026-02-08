@@ -13,11 +13,8 @@ const Register = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-
-    // Clear previous errors
     clearError();
 
-    // Validation
     if (
       !username.trim() ||
       !email.trim() ||
@@ -40,10 +37,8 @@ const Register = () => {
 
     try {
       await register(username, email, password);
-      // Registration successful, redirect to login or dashboard
       navigate("/auth/login");
     } catch (err) {
-      // Error is already handled by the store
       console.error("Registration error:", err);
     }
   };
