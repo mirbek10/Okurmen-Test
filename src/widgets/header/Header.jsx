@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
-// Можно использовать react-icons вместо lucide-react
 import { FiMenu, FiX, FiLogOut } from "react-icons/fi";
 import Cookies from "js-cookie";
 
@@ -14,9 +13,8 @@ const navItems = [
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const location = useLocation(); // Используем useLocation вместо usePathname
+  const location = useLocation();
 
-  // Функция для объединения классов
   const getNavLinkClass = (itemPath) => {
     const baseClass = "text-sm font-medium transition-colors relative py-2";
     if (location.pathname === itemPath) {
@@ -33,20 +31,16 @@ export function Header() {
     return `${baseClass} text-slate-600 hover:bg-slate-50`;
   };
 
-  // Функция для выхода
   const handleLogout = () => {
     Cookies.remove("adminToken");
     window.location.href = "/";
   };
-
-  // Проверяем активность пользователя
   const isLoggedIn = Cookies.get("adminToken");
 
   return (
     <header className="sticky top-0 z-40 border-b border-blue-100 bg-white/80 backdrop-blur-xl shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center shadow-md">
               <span className="text-white font-bold">✓</span>
@@ -57,7 +51,6 @@ export function Header() {
             <span className="sm:hidden text-blue-600 font-bold text-xl">TH</span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
               <Link
@@ -76,7 +69,6 @@ export function Header() {
             
           </nav>
 
-          {/* User Section */}
           <div className="hidden md:flex items-center gap-4">
             {isLoggedIn ? (
               <>
@@ -116,7 +108,6 @@ export function Header() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             className="md:hidden p-2 rounded-lg hover:bg-slate-50 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
@@ -131,7 +122,6 @@ export function Header() {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
         {menuOpen && (
           <div className="md:hidden border-t border-blue-100 py-4 animate-fade-in">
             <div className="space-y-1">
@@ -146,7 +136,6 @@ export function Header() {
                 </Link>
               ))}
               
-              {/* Дополнительные ссылки для администратора в мобильной версии */}
               {isLoggedIn && (
                 <>
                   <Link
@@ -167,7 +156,6 @@ export function Header() {
               )}
             </div>
 
-            {/* Mobile User Section */}
             <div className="mt-4 pt-4 border-t border-slate-100">
               {isLoggedIn ? (
                 <div className="px-4 py-3 flex items-center justify-between">

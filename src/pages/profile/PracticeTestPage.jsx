@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ChevronLeft,
@@ -51,15 +51,15 @@ export const PracticeTestPage = () => {
     if (questions.length === 0 || questionsLoading) return;
 
     const frontCategories = ["html", "javascript", "react", "typescript", "mixed"];
-    const backCategories = ["nodejs", "mongodb", "postgresql", "python", "backend"];
-    const javaCategories = ["java основа", "java продвинутый", "spring"];
+    const backCategories = ["Django", "python", "backend", "Spring", "Java основы", "Java продвинутый", "Основа", "Продвинутый"];
+    const javaCategories = ["Java основы", "Java продвинутый", "Spring"];
 
     let filtered;
 
     if (type === "front") {
-      filtered = questions.filter(q => frontCategories.includes(q.category.toLowerCase()));
+      filtered = questions.filter(q => frontCategories.some(cat => cat.toLowerCase() === q.category.toLowerCase()));
     } else if (type === "back") {
-      filtered = questions.filter(q => backCategories.includes(q.category.toLowerCase()));
+      filtered = questions.filter(q => backCategories.some(cat => cat.toLowerCase() === q.category.toLowerCase()));
     } else {
       filtered = questions.filter(q => q.category.toLowerCase() === type.toLowerCase());
     }
@@ -71,9 +71,9 @@ export const PracticeTestPage = () => {
 
     const countToTake = Math.min(filtered.length, 20);
     const shuffled = shuffleArray(filtered).slice(0, countToTake);
-    
+
     setTestQuestions(shuffled);
-    setTimeLeft(shuffled.length * 60); 
+    setTimeLeft(shuffled.length * 60);
   }, [questions, questionsLoading, type]);
 
   useEffect(() => {
@@ -98,15 +98,14 @@ export const PracticeTestPage = () => {
 
   const finishTest = useCallback(() => {
     if (isFinished) return;
-    
+
     setIsFinished(true);
-    
-    // Формируем детальные результаты
+
     const detailedResults = testQuestions.map((q, index) => {
       const selectedIdx = answers[index];
       const selectedAnswer = selectedIdx !== undefined ? q.options[selectedIdx] : null;
       const isCorrect = selectedAnswer === q.answer;
-      
+
       return {
         questionNumber: index + 1,
         question: q.question,
@@ -122,22 +121,20 @@ export const PracticeTestPage = () => {
     const answeredCount = detailedResults.filter(r => r.wasAnswered).length;
 
     const resultData = {
-      id: Date.now(), // уникальный ID для этого теста
+      id: Date.now(),
       category: type,
       total: testQuestions.length,
       correct: correctCount,
       answered: answeredCount,
       percent: Math.round((correctCount / testQuestions.length) * 100),
       date: new Date().toISOString(),
-      timeSpent: (testQuestions.length * 60) - timeLeft, // сколько времени потрачено
-      detailedResults: detailedResults // ВСЕ вопросы с ответами
+      timeSpent: (testQuestions.length * 60) - timeLeft,
+      detailedResults: detailedResults
     };
 
-    // Сохраняем в историю
     const history = JSON.parse(localStorage.getItem("practice_history") || "[]");
     localStorage.setItem("practice_history", JSON.stringify([resultData, ...history]));
 
-    // Показываем результат
     Swal.fire({
       title: "Тест завершен!",
       html: `
@@ -154,7 +151,6 @@ export const PracticeTestPage = () => {
       cancelButtonText: "В личный кабинет"
     }).then((result) => {
       if (result.isConfirmed) {
-        // Переходим на страницу с детальными результатами
         navigate(`/user/history`);
       } else {
         navigate("/user/profile");
@@ -164,7 +160,7 @@ export const PracticeTestPage = () => {
 
   const handleManualSubmit = async () => {
     const answeredCount = Object.keys(answers).length;
-    
+
     const result = await Swal.fire({
       title: "Завершить тест?",
       html: `
@@ -187,18 +183,18 @@ export const PracticeTestPage = () => {
 
   if (questionsLoading || (testQuestions.length === 0 && !error)) {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
-            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="font-bold text-slate-500">Подготовка вопросов: {type}...</p>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="font-bold text-slate-500">Подготовка вопросов: {type}...</p>
+      </div>
     );
   }
 
   if (error) return (
     <div className="min-h-screen flex flex-col items-center justify-center p-10 text-center">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">Упс!</h2>
-        <p className="text-slate-500 mb-6">{error}</p>
-        <button onClick={() => navigate(-1)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl">Назад</button>
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">Упс!</h2>
+      <p className="text-slate-500 mb-6">{error}</p>
+      <button onClick={() => navigate(-1)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl">Назад</button>
     </div>
   );
 
@@ -208,31 +204,30 @@ export const PracticeTestPage = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <FocusGuard reload={() => window.location.reload()} />
-      
+
       <header className="bg-white border-b sticky top-0 z-20 px-4 py-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
-                <Code2 size={24} />
+              <Code2 size={24} />
             </div>
             <div>
               <h1 className="font-bold uppercase tracking-wider text-slate-700 text-sm md:text-base">
                 Тест: {type}
               </h1>
               <p className="text-xs text-slate-400 font-medium">
-                Вопрос {currentQuestionIndex + 1} из {testQuestions.length} | 
+                Вопрос {currentQuestionIndex + 1} из {testQuestions.length} |
                 Отвечено: {Object.keys(answers).length}
               </p>
             </div>
           </div>
 
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-lg ${
-            timeLeft < 60 
-              ? 'bg-red-50 text-red-600 animate-pulse' 
-              : timeLeft < 300 
-              ? 'bg-orange-50 text-orange-600' 
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-lg ${timeLeft < 60
+            ? 'bg-red-50 text-red-600 animate-pulse'
+            : timeLeft < 300
+              ? 'bg-orange-50 text-orange-600'
               : 'bg-slate-50 text-slate-600'
-          }`}>
+            }`}>
             <Clock size={20} />
             {formatTime(timeLeft)}
           </div>
@@ -258,15 +253,13 @@ export const PracticeTestPage = () => {
                 <button
                   key={index}
                   onClick={() => setAnswers(prev => ({ ...prev, [currentQuestionIndex]: index }))}
-                  className={`group w-full flex items-center p-5 rounded-2xl border-2 transition-all text-left ${
-                    isSelected 
-                      ? "border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100" 
-                      : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
-                  }`}
+                  className={`group w-full flex items-center p-5 rounded-2xl border-2 transition-all text-left ${isSelected
+                    ? "border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100"
+                    : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
+                    }`}
                 >
-                  <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center transition-colors ${
-                    isSelected ? "border-indigo-600 bg-indigo-600" : "border-slate-300 group-hover:border-slate-400"
-                  }`}>
+                  <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center transition-colors ${isSelected ? "border-indigo-600 bg-indigo-600" : "border-slate-300 group-hover:border-slate-400"
+                    }`}>
                     {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
                   </div>
                   <span className={`text-base md:text-lg font-bold ${isSelected ? "text-indigo-900" : "text-slate-600"}`}>
@@ -307,13 +300,12 @@ export const PracticeTestPage = () => {
             className="flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all active:scale-95"
           >
             <span className="md:inline">
-                {currentQuestionIndex === testQuestions.length - 1 ? 'Завершить' : 'Далее'}
+              {currentQuestionIndex === testQuestions.length - 1 ? 'Завершить' : 'Далее'}
             </span>
             <ChevronRight size={24} />
           </button>
         </div>
 
-        {/* Индикатор отвеченных вопросов */}
         <div className="mt-8 bg-white rounded-2xl p-6 border border-slate-200">
           <h3 className="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wide">
             Прогресс теста
@@ -322,18 +314,17 @@ export const PracticeTestPage = () => {
             {testQuestions.map((_, index) => {
               const isAnswered = answers[index] !== undefined;
               const isCurrent = index === currentQuestionIndex;
-              
+
               return (
                 <button
                   key={index}
                   onClick={() => setCurrentQuestionIndex(index)}
-                  className={`h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${
-                    isCurrent
-                      ? "bg-indigo-600 text-white ring-2 ring-indigo-300"
-                      : isAnswered
+                  className={`h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${isCurrent
+                    ? "bg-indigo-600 text-white ring-2 ring-indigo-300"
+                    : isAnswered
                       ? "bg-green-100 text-green-700 border-2 border-green-300"
                       : "bg-slate-100 text-slate-400 border-2 border-slate-200"
-                  }`}
+                    }`}
                 >
                   {index + 1}
                 </button>

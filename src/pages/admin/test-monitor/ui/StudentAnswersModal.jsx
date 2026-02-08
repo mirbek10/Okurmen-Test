@@ -26,7 +26,6 @@ export const StudentAnswersModal = ({
       setLoading(true);
       setError(null);
 
-      // Сначала получаем информацию о студенте
       const studentResponse = await axiosAdmin.get(
         `/admin/getStudent/${testCode}/${studentId}`
       );
@@ -34,7 +33,6 @@ export const StudentAnswersModal = ({
       const studentData = studentResponse.data.student;
       setStudentInfo(studentData);
 
-      // Если у студента есть ответы, отображаем их
       if (studentData.answers && Array.isArray(studentData.answers)) {
         setAnswers(studentData.answers);
       } else {
@@ -50,14 +48,12 @@ export const StudentAnswersModal = ({
     }
   };
 
-  // Функция для определения стиля ответа
   const getAnswerStyle = (isCorrect) => {
     return isCorrect 
       ? "bg-green-50 border-green-200 text-green-700"
       : "bg-red-50 border-red-200 text-red-700";
   };
 
-  // Подсчет статистики
   const stats = {
     total: answers.length,
     correct: answers.filter(a => a.isCorrect).length,
@@ -73,7 +69,6 @@ export const StudentAnswersModal = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Заголовок модалки */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200 p-6">
           <div className="flex justify-between items-center">
             <div>

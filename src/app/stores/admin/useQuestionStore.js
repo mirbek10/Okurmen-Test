@@ -21,13 +21,10 @@ export const useQuestionStore = create((set, get) => ({
     uploading: false,
     error: null,
     allCategories: [],
-    // Состояние фильтров
     search: '',
     category: '',
     sort: 'createdAt',
     order: 'desc',
-
-    // Пагинация
     total: 0,
     page: 1,
     totalPages: 1,
@@ -39,7 +36,6 @@ export const useQuestionStore = create((set, get) => ({
             const state = get();
 
             const requestParams = {
-                // Если вы грузите тест, лимит должен быть большим
                 limit: params.limit || 20,
                 page: params.page || state.page,
                 search: params.search !== undefined ? params.search : state.search,
@@ -52,13 +48,7 @@ export const useQuestionStore = create((set, get) => ({
 
             const { questions, total, totalPages, hasMore, page, allCategories } = response.data;
 
-            // ИСПРАВЛЕНИЕ: Не фильтруйте строго по 4 опциям, 
-            // если не уверены, что в базе их всегда 4.
-            // Просто проверяем, что опции вообще есть.
             const validOnes = questions.filter(q => Array.isArray(q.options) && q.options.length > 0);
-
-            // Очистку cleanQuestions лучше пока отключить или сделать мягче,
-            // чтобы не поломать сравнение правильных ответов.
             const cleaned = cleanQuestions(validOnes);
 
             set({
@@ -86,7 +76,6 @@ export const useQuestionStore = create((set, get) => ({
         try {
             set({ uploading: true });
 
-            // 1. ПРОВЕРКА: Что именно мы получили?
             if (!(file instanceof File)) {
                 console.error("Передан не файл, а:", file);
                 set({ uploading: false });

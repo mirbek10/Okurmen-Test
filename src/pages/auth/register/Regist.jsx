@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-
-// Импортируем ваши сторы
 import { useAdminLoginStore } from "@/app/stores/admin/adminLogin";
 import { useUserJoinStore } from "@/app/stores/user/userJoin";
 import { useAuthStore } from "@/app/stores/auth/authStore";
@@ -26,14 +24,10 @@ const Register = () => {
     error: userError,
   } = useUserJoinStore();
 
-  // Достаем данные из общего стора авторизации
   const { user: profile, fetchUserProfile } = useAuthStore();
 
   const navigate = useNavigate();
 
-  // 1. При загрузке страницы проверяем токен и перенаправляем
-
-  // 2. При загрузке страницы, если есть токен, запрашиваем профиль
   useEffect(() => {
     const token = Cookies.get("userToken") || Cookies.get("token");
     if (token && !profile) {
@@ -41,7 +35,6 @@ const Register = () => {
     }
   }, [fetchUserProfile, profile]);
 
-  // 3. Когда данные профиля получены, автоматически заполняем поля
   useEffect(() => {
     if (profile) {
       if (profile.username) setName(profile.username);
@@ -95,9 +88,7 @@ const Register = () => {
 
   const handlePrepareForTest = () => {
     const userToken = Cookies.get("userToken");
-    // Перенаправляем на страницу подготовки к тесту
     if (userToken) {
-      // Если есть токен, перенаправляем в профиль
       navigate("/user/profile");
     } else {
       navigate("/auth/register");

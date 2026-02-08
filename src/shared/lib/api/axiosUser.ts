@@ -1,7 +1,6 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-// Создаём экземпляр axios
 export const axiosUser = axios.create({
   baseURL: "https://beckend-test-sqyj.onrender.com/api/",
   headers: {
@@ -9,7 +8,6 @@ export const axiosUser = axios.create({
     Accept: "*/*",
   },
 });
-
 
 axiosUser.interceptors.request.use((config) => {
   const token = Cookies.get('userToken');

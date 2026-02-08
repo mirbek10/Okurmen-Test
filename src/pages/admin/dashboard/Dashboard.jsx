@@ -20,6 +20,8 @@ import {
 import { useAdminPreviewStore } from "@/app/stores/admin/adminPreview";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
 
+import { useTestCategoryStore } from "@/app/stores/all/getTestCategory";
+
 export function Dashboard() {
   const {
     res,
@@ -33,6 +35,7 @@ export function Dashboard() {
     fetchQuestions,
     loading: questionsLoading,
   } = useQuestionStore();
+  const { testCategories, fetchTestCategories } = useTestCategoryStore();
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedTest, setSelectedTest] = useState(null);
@@ -49,156 +52,46 @@ export function Dashboard() {
 
   useEffect(() => {
     fetchQuestions();
+    fetchTestCategories();
     return () => {
       if (redirectRef.current) clearRes();
     };
-  }, [fetchQuestions]);
+  }, [fetchQuestions, fetchTestCategories]);
 
   useEffect(() => {
-    if (questions.length > 0) {
-      createTestsFromQuestions();
+    if (testCategories.length > 0) {
+      createTestsFromCategories();
     }
-  }, [questions]);
+  }, [testCategories]);
 
-  const createTestsFromQuestions = useCallback(() => {
-    if (questions.length === 0) return;
-
-    const categoryCounts = {
-      html: 0,
-      javascript: 0,
-      react: 0,
-      typescript: 0,
-      django: 0,
-      основа: 0,
-      продвинутый: 0,
+  const createTestsFromCategories = useCallback(() => {
+    const getCategoryConfig = (catName) => {
+      const lower = catName.toLowerCase();
+      if (lower.includes("html")) return { icon: Layout, desc: "Верстка и стилизация" };
+      if (lower.includes("javascript") || lower.includes("js")) return { icon: Braces, desc: "Стандарты ES6+ и DOM" };
+      if (lower.includes("react")) return { icon: Box, desc: "Hooks, Props и State" };
+      if (lower.includes("typescript") || lower.includes("ts")) return { icon: Code2, desc: "Статическая типизация" };
+      if (lower.includes("django")) return { icon: Terminal, desc: "Python Web Framework" };
+      if (lower.includes("python")) return { icon: Layers, desc: "Python разработка" };
+      if (lower.includes("java")) return { icon: Flame, desc: "Java разработка" };
+      if (lower.includes("spring")) return { icon: Server, desc: "Java Spring Framework" };
+      return { icon: Zap, desc: "Тестирование знаний" };
     };
 
-    questions.forEach((q) => {
-      const cat = q.category?.toLowerCase().trim();
-      if (categoryCounts.hasOwnProperty(cat)) {
-        categoryCounts[cat]++;
-      }
+    const availableTests = testCategories.map((catItem) => {
+      const { icon, desc } = getCategoryConfig(catItem.category);
+      return {
+        id: catItem.category,
+        name: catItem.category,
+        questionsCount: catItem.count,
+        category: catItem.category,
+        icon: icon,
+        description: desc,
+      };
     });
 
-    const availableTests = [
-      {
-        id: "html",
-        name: "HTML / CSS",
-        questionsCount: categoryCounts.html,
-        category: "html",
-        icon: Layout,
-        description: "Верстка и стилизация",
-      },
-      {
-        id: "javascript",
-        name: "JavaScript",
-        questionsCount: categoryCounts.javascript,
-        category: "javascript",
-        icon: Braces,
-        description: "Стандарты ES6+ и DOM",
-      },
-      {
-        id: "react",
-        name: "React JS",
-        questionsCount: categoryCounts.react,
-        category: "react",
-        icon: Box,
-        description: "Hooks, Props и State",
-      },
-      {
-        id: "typescript",
-        name: "TypeScript",
-        questionsCount: categoryCounts.typescript,
-        category: "typescript",
-        icon: Code2,
-        description: "Статическая типизация",
-      },
-      {
-        id: "django",
-        name: "Django",
-        questionsCount: 5,
-        category: "Django",
-        icon: Terminal,
-        description: "Python Web Framework",
-      },
-      {
-        id: "python_base",
-        name: "Python Base",
-        questionsCount: 5,
-        category: "Основа",
-        icon: Layers,
-        description: "Основы синтаксиса",
-      },
-      {
-        id: "python_adv",
-        name: "Python Pro",
-        questionsCount: 5,
-        category: "Продвинутый",
-        icon: Flame,
-        description: "ООП и метаклассы",
-      },
-      {
-        id: "java_base",
-        name: "Java Base",
-        questionsCount: 5,
-        category: "Java Основа",
-        icon: Layers,
-        description: "Основы синтаксиса",
-      },
-      {
-        id: "java_adv",
-        name: "Java Pro",
-        questionsCount: 5,
-        category: "Java Продвинутый",
-        icon: Flame,
-        description: "ООП и метаклассы",
-      },
-      {
-        id: "spring",
-        name: "Spring",
-        questionsCount: 5,
-        category: "Spring",
-        icon: Terminal,
-        description: "Java Spring Framework",
-      },
-    ];
-
-    const frontCategories = ["html", "javascript", "react", "typescript"];
-    const totalFront = frontCategories.reduce(
-      (acc, cat) => acc + categoryCounts[cat],
-      0,
-    );
-
-    if (totalFront >= 10) {
-      availableTests.push({
-        id: "mixed_frontend",
-        name: "Mixed Frontend",
-        description: "Комплексный Frontend тест",
-        questionsCount: Math.min(totalFront, 30),
-        category: "frontend",
-        icon: Zap,
-      });
-    }
-
-    const backCategories = ["django", "основа", "продвинутый"];
-    const totalBack = backCategories.reduce(
-      (acc, cat) => acc + categoryCounts[cat],
-      0,
-    );
-
-    if (totalBack >= 5) {
-      availableTests.push({
-        id: "mixed_backend",
-        name: "Mixed Backend",
-        description: "Комплексный Backend тест",
-        questionsCount: Math.min(totalBack, 25),
-        category: "backend",
-        icon: Server,
-      });
-    }
-
     setTests(availableTests.filter((test) => test.questionsCount > 0));
-  }, [questions]);
+  }, [testCategories]);
 
   useEffect(() => {
     if (res?.id && isCreatingTest && !redirectRef.current) {

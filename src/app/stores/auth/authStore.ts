@@ -75,7 +75,6 @@ export const useAuthStore = create<AuthState>((set) => ({
                 loading: false,
             });
 
-            // Store token in cookies
             if (response.data.token) {
                 Cookies.set('userToken', response.data.token, { expires: 7 });
             }
@@ -102,7 +101,6 @@ export const useAuthStore = create<AuthState>((set) => ({
                 loading: false
             });
 
-            // Store token in cookies
             if (response.data.token) {
                 Cookies.set('userToken', response.data.token, { expires: 7 });
             }
@@ -146,7 +144,6 @@ export const useAuthStore = create<AuthState>((set) => ({
                 avatarUrl
             });
 
-            // Update user with new avatar
             set(prevState => ({
                 user: prevState.user ? { ...prevState.user, avatar: response.data.success ? response.data.user?.avatar : prevState.user.avatar } : null,
                 loading: false

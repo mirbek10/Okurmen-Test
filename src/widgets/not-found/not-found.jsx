@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-// Стили для анимаций (можно добавить в CSS или использовать CSS-in-JS)
 const styles = `
   @keyframes fadeIn {
     from {
@@ -53,12 +52,10 @@ const styles = `
 export function NotFound() {
   return (
     <>
-      {/* Инлайн стили для анимаций */}
       <style>{styles}</style>
       
       <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#235ee7] via-[#3b7efc] to-[#1b4dcc] text-white">
         
-        {/* Анимированные круги */}
         <div 
           className="absolute -top-32 -left-32 w-72 h-72 bg-[#235ee7]/40 rounded-full blur-3xl"
           style={{
@@ -80,7 +77,6 @@ export function NotFound() {
           }}
         />
 
-        {/* Контент */}
         <div className="relative z-10 text-center px-4 sm:px-6">
           <h1 className="text-7xl sm:text-8xl md:text-9xl font-extrabold drop-shadow-lg animate-fade-in">
             404
@@ -143,7 +139,6 @@ export function NotFound() {
           </div>
         </div>
 
-        {/* Градиентная линия снизу */}
         <div 
           className="absolute bottom-0 w-full h-1 bg-gradient-to-r from-transparent via-white/50 to-transparent"
           style={{
@@ -151,7 +146,6 @@ export function NotFound() {
           }}
         />
         
-        {/* Дополнительный декоративный элемент */}
         <div className="absolute top-10 left-10 w-8 h-8 border-2 border-white/30 rounded-full animate-ping"></div>
         <div className="absolute bottom-20 left-1/4 w-6 h-6 border-2 border-white/20 rounded-full animate-ping" style={{animationDelay: '0.5s'}}></div>
         <div className="absolute top-1/4 right-20 w-4 h-4 border-2 border-white/10 rounded-full animate-ping" style={{animationDelay: '1s'}}></div>

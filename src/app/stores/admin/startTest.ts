@@ -22,7 +22,7 @@ export const useAdminStartStore = create<UseAdminStartStore>((set) => ({
             set({ loading: true, error: null });
 
             const response = await axiosAdmin.post('/admin/start', {
-                id, // ⬅️ гарантированно number
+                id,
             });
 
             set({ res: response.data });

@@ -9,18 +9,17 @@ import {
   Zap,
   ChevronLeft,
   BookOpen,
-  Code2,       // Для HTML/CSS
-  Braces,      // Для JavaScript
-  Atom,        // Для React
-  FileJson,    // Для TypeScript
-  Terminal     // Для Python
+  Code2,       
+  Braces,      
+  Atom,        
+  FileJson,    
+  Terminal     
 } from 'lucide-react';
 
 export function PracticeSelection() {
   const navigate = useNavigate();
   const [activeMode, setActiveMode] = useState(null);
 
-  // Обновленные данные тестов с иконками Lucide
 const availableTests = {
     front: [
       { 

@@ -213,17 +213,15 @@ export function Lider() {
                   key={user._id}
                   className={`p-4 md:p-6 transition-all flex items-center justify-between gap-3 group relative overflow-hidden ${
                     isYou
-                      ? "bg-indigo-50/40 shadow-[inset_4px_0_0_0_#4f46e5]" // Синяя полоска слева для "тебя"
+                      ? "bg-indigo-50/40 shadow-[inset_4px_0_0_0_#4f46e5]" 
                       : "hover:bg-slate-50"
                   }`}
                 >
-                  {/* Декоративный эффект для "тебя" (легкое свечение на фоне) */}
                   {isYou && (
                     <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none" />
                   )}
 
                   <div className="flex items-center gap-3 md:gap-6 min-w-0 relative z-10">
-                    {/* Место */}
                     <div
                       className={`
       w-8 h-8 md:w-12 md:h-12 shrink-0 flex items-center justify-center rounded-lg md:rounded-2xl font-black text-xs md:text-lg border transition-transform
@@ -234,7 +232,6 @@ export function Lider() {
                       {user.globalRank}
                     </div>
 
-                    {/* Инфо */}
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
                         <img
