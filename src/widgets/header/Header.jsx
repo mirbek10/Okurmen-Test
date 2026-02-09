@@ -136,7 +136,7 @@ export function Header() {
                 </Link>
               ))}
               
-              {isLoggedIn && (
+              {/* {isLoggedIn && (
                 <>
                   <Link
                     to="/dashboard"
@@ -153,7 +153,7 @@ export function Header() {
                     Тесты
                   </Link>
                 </>
-              )}
+              )} */}
             </div>
 
             <div className="mt-4 pt-4 border-t border-slate-100">
