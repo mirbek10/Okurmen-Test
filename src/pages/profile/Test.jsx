@@ -1,114 +1,147 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Layout, 
-  ArrowRight, 
-  Sparkles, 
-  Server, 
-  GraduationCap, 
+import {
+  Layout,
+  ArrowRight,
+  Sparkles,
+  Server,
+  GraduationCap,
   Zap,
   ChevronLeft,
   BookOpen,
-  Code2,       
-  Braces,      
-  Atom,        
-  FileJson,    
-  Terminal     
+  Code2,
+  Braces,
+  Atom,
+  FileJson,
+  Terminal,
+  Smartphone // Добавил для Flutter
 } from 'lucide-react';
 
 export function PracticeSelection() {
   const navigate = useNavigate();
   const [activeMode, setActiveMode] = useState(null);
 
-const availableTests = {
+  // Группировка названий для заголовков
+  const modeLabels = {
+    front: 'Frontend',
+    back: 'Backend',
+    java: 'Java',
+    flutter: 'Flutter'
+  };
+
+  const availableTests = {
     front: [
-      { 
-        id: "html", 
-        name: "HTML/CSS", 
-        icon: <Code2 className="text-blue-500" />, 
-        description: "Основы верстки и стилей", 
-        category: "html" 
+      {
+        id: "html",
+        name: "HTML/CSS",
+        icon: <Code2 className="text-blue-500" />,
+        description: "Основы верстки и стилей",
+        category: "html"
       },
-      { 
-        id: "javascript", 
-        name: "JavaScript", 
-        icon: <Braces className="text-yellow-500" />, 
-        description: "Core JS & ES6+", 
-        category: "javascript" 
+      {
+        id: "javascript",
+        name: "JavaScript",
+        icon: <Braces className="text-yellow-500" />,
+        description: "Core JS & ES6+",
+        category: "javascript"
       },
-      { 
-        id: "react", 
-        name: "React/Redux", 
-        icon: <Atom className="text-cyan-500" />, 
-        description: "Modern UI Development", 
-        category: "react" 
+      {
+        id: "react",
+        name: "React/Redux",
+        icon: <Atom className="text-cyan-500" />,
+        description: "Modern UI Development",
+        category: "react"
       },
-      { 
-        id: "typescript", 
-        name: "TypeScript", 
-        icon: <FileJson className="text-blue-600" />, 
-        description: "Static Typing & Logic", 
-        category: "typescript" 
+      {
+        id: "typescript",
+        name: "TypeScript",
+        icon: <FileJson className="text-blue-600" />,
+        description: "Static Typing & Logic",
+        category: "typescript"
       },
     ],
     back: [
-      { 
-        id: "django", 
-        name: "Django", 
-        icon: <Terminal className="text-emerald-500" />, 
-        description: "Python Web Framework & ORM", 
-        category: "Django" 
+      {
+        id: "django",
+        name: "Django",
+        icon: <Terminal className="text-emerald-500" />,
+        description: "Python Web Framework & ORM",
+        category: "Django"
       },
-      { 
-        id: "основа", 
-        name: "Основы Python", 
-        icon: <Zap className="text-yellow-600" />, 
-        description: "Синтаксис, типы данных и циклы", 
+      {
+        id: "python_base",
+        name: "Основы Python",
+        icon: <Zap className="text-yellow-600" />,
+        description: "Синтаксис, типы данных и циклы",
         category: "Основа"
       },
-      { 
-        id: "Продвинутый", 
-        name: "Продвинутый Python", 
-        icon: <Sparkles className="text-purple-500" />, 
-        description: "ООП, декораторы и генераторы", 
+      {
+        id: "python_adv",
+        name: "Продвинутый Python",
+        icon: <Sparkles className="text-purple-500" />,
+        description: "ООП, декораторы и генераторы",
         category: "Продвинутый"
       }
     ],
-    java:[
-      { 
-        id: "Java основы", 
-        name: "Основы Java", 
-        icon: <BookOpen className="text-amber-500" />, 
-        description: "Синтаксис, типы данных и циклы", 
+    java: [
+      {
+        id: "java_base",
+        name: "Основы Java",
+        icon: <BookOpen className="text-amber-500" />,
+        description: "Синтаксис, типы данных и циклы",
         category: "java основа"
       },
-      { 
-        id: "Java продвинутый", 
-        name: "Продвинутый Java", 
-        icon: <Sparkles className="text-purple-500" />, 
-        description: "ООП, декораторы и генераторы", 
+      {
+        id: "java_adv",
+        name: "Продвинутый Java",
+        icon: <Sparkles className="text-purple-500" />,
+        description: "ООП, декораторы и генераторы",
         category: "java продвинутый"
       },
-      { 
-        id: "spring", 
-        name: "Spring", 
-        icon: <Server className="text-emerald-500" />, 
-        description: "Spring Framework", 
+      {
+        id: "spring",
+        name: "Spring",
+        icon: <Server className="text-emerald-500" />,
+        description: "Spring Framework",
         category: "spring"
+      }
+    ],
+    flutter: [
+      {
+        id: "flutter1",
+        name: "Основы Flutter",
+        icon: <BookOpen className="text-amber-500" />,
+        description: "Введение во Flutter, виджеты, структура проекта",
+        category: "basics",
+      },
+      {
+        id: "flutter3",
+        name: "Продвинутый Flutter",
+        icon: <Sparkles className="text-purple-500" />,
+        description: "ООП, state management, архитектура",
+        category: "advanced",
+      },
+      {
+        id: "flutter5",
+        name: "Flutter UI",
+        icon: <Smartphone className="text-emerald-500" />,
+        description: "Работа с интерфейсами и адаптивностью",
+        category: "ui",
       }
     ]
   };
+
   const modes = [
     {
       id: 'real',
       title: 'Официальный экзамен',
       subtitle: 'Зачетный режим',
-      description: 'Финальное тестирование. Результаты будут записаны в вашу постоянную статистику.',
+      description: 'Финальное тестирование. Результаты будут записаны в вашу статистику.',
       icon: <GraduationCap className="w-8 h-8 text-amber-500" />,
       bg: 'bg-amber-50',
       border: 'hover:border-amber-400 border-amber-100',
       button: 'bg-amber-500',
-      action: () => navigate('/'),
+      action: () => navigate('/exams'),
       stats: 'Влияет на рейтинг',
     },
     {
@@ -121,38 +154,51 @@ const availableTests = {
       border: 'hover:border-blue-400',
       button: 'bg-blue-600',
       action: () => setActiveMode('front'),
-      stats: `${availableTests.front.length} темы доступно`
+      stats: `${availableTests.front.length} темы`
     },
     {
       id: 'back',
       title: 'Backend Developer',
       subtitle: 'Тренировка',
-      description: 'Node.js, Python, Базы данных и архитектура.',
+      description: 'Python, Django, Базы данных и архитектура.',
       icon: <Server className="w-8 h-8 text-emerald-500" />,
       bg: 'bg-emerald-50',
       border: 'hover:border-emerald-400',
       button: 'bg-emerald-600',
       action: () => setActiveMode('back'),
-      stats: `${availableTests.back.length} темы доступно`
+      stats: `${availableTests.back.length} темы`
     },
     {
       id: 'java',
       title: 'Java Developer',
       subtitle: 'Тренировка',
-      description: 'Java основа, Java продвинутый, Spring.',
-      icon: <Server className="w-8 h-8 text-amber-500" />,
-      bg: 'bg-amber-50',
-      border: 'hover:border-amber-400',
-      button: 'bg-amber-500',
+      description: 'Java Core, Collections, Multithreading и Spring.',
+      icon: <Terminal className="w-8 h-8 text-amber-600" />,
+      bg: 'bg-orange-50',
+      border: 'hover:border-orange-400',
+      button: 'bg-orange-600',
       action: () => setActiveMode('java'),
-      stats: `${availableTests.java.length} темы доступно`
+      stats: `${availableTests.java.length} темы`
+    },
+    {
+      id: 'flutter',
+      title: 'Flutter Developer',
+      subtitle: 'Тренировка',
+      description: 'Dart, Widgets, State Management и UI Pro.',
+      icon: <Smartphone className="w-8 h-8 text-indigo-600" />,
+      bg: 'bg-indigo-50',
+      border: 'hover:border-indigo-400',
+      button: 'bg-indigo-600',
+      action: () => setActiveMode('flutter'),
+      stats: `${availableTests.flutter.length} темы`
     }
   ];
 
+  // ВТОРОЙ ЭКРАН: Выбор конкретного теста
   if (activeMode) {
     return (
       <div className="w-full max-w-6xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <button 
+        <button
           onClick={() => setActiveMode(null)}
           className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-all mb-8 font-bold group"
         >
@@ -163,10 +209,10 @@ const availableTests = {
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-2">
             <span className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                <BookOpen size={24} />
+              <BookOpen size={24} />
             </span>
             <h2 className="text-3xl font-black text-slate-800">
-                Модули {activeMode === 'front' ? 'Frontend' : 'Backend'}
+              Модули {modeLabels[activeMode]}
             </h2>
           </div>
           <p className="text-slate-500">Выберите конкретную технологию для начала практики</p>
@@ -181,7 +227,7 @@ const availableTests = {
             >
               <div className="flex items-center gap-5">
                 <div className="w-14 h-14 flex items-center justify-center rounded-2xl bg-slate-50 group-hover:bg-white transition-colors border border-transparent group-hover:border-slate-100 shadow-sm">
-                  {/* Рендерим иконку Lucide */}
+                  {/* Безопасный рендеринг иконки */}
                   {React.cloneElement(test.icon, { size: 28 })}
                 </div>
                 <div>
@@ -201,6 +247,7 @@ const availableTests = {
     );
   }
 
+  // ПЕРВЫЙ ЭКРАН: Главный выбор
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-8 md:py-12">
       <div className="text-center mb-8 md:mb-12">
