@@ -9,6 +9,7 @@ const navItems = [
   { path: "/admin/questions", label: "Вопросы" },
   { path: "/admin/resalt", label: "Результаты" },
   { path: "/admin/leaderboard", label: "Рейтинг" },
+  { path: "/admin/add-question", label: "Добавить вопрос c JSON" },
 ];
 
 export function Header() {
