@@ -16,18 +16,21 @@ import {
   XCircle,
   AlertCircle,
 } from "lucide-react";
+import { useTestCategoryStore } from "@/app/stores/all/getTestCategory";
 
 export function PracticeHistoryPage() {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
   const [filter, setFilter] = useState("all");
   const [selectedTest, setSelectedTest] = useState(null);
+    const { testCategories, fetchTestCategories, loading } = useTestCategoryStore();
 
   useEffect(() => {
     const savedHistory = JSON.parse(
       localStorage.getItem("practice_history") || "[]",
     );
     setHistory(savedHistory);
+    fetchTestCategories();
   }, []);
 
   const clearHistory = () => {
@@ -49,6 +52,13 @@ export function PracticeHistoryPage() {
       : 0,
     bestScore: history.length ? Math.max(...history.map((h) => h.percent)) : 0,
   };
+
+  console.log(testCategories);
+  
+
+  if(loading && !testCategories){
+    return <div className="min-h-screen bg-slate-50 py-4 md:py-12 px-3 md:px-4">Загрузка...</div>
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 py-4 md:py-12 px-3 md:px-4">
@@ -91,18 +101,16 @@ export function PracticeHistoryPage() {
           <div className="p-2.5 bg-slate-200/50 rounded-xl text-slate-500 shrink-0">
             <Filter size={18} />
           </div>
-          {["all", "html", "react", "javascript", "typescript", "основы Python", "продвинутый Python", "django",
-            "Java основы", "Java продвинутый", "Spring",
-          ].map((id) => (
+          {["all", ...testCategories]?.map((el, i) => (
             <button
-              key={id}
-              onClick={() => setFilter(id)}
-              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap border ${filter === id
+              key={i}
+              onClick={() => setFilter(el.category)}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap border ${filter === el.category
                   ? "bg-slate-800 text-white border-slate-800 shadow-sm"
                   : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
                 }`}
             >
-              {id === "all" ? "Все" : id.toUpperCase()}
+              {el === "all" ? "Все" : el.category.toUpperCase()}
             </button>
           ))}
         </div>
