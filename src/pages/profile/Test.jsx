@@ -141,7 +141,7 @@ export function PracticeSelection() {
       bg: 'bg-amber-50',
       border: 'hover:border-amber-400 border-amber-100',
       button: 'bg-amber-500',
-      action: () => navigate('/exams'),
+      action: () => navigate('/'),
       stats: 'Влияет на рейтинг',
     },
     {
