@@ -4,3 +4,11 @@
 button, input[type="submit"] , a, button:hover, input[type="submit"]:hover, a:hover{
     cursor: pointer;
 }
+
+input[type="submit"]:disabled, button:disabled, a:disabled, input[type="submit"]:disabled:hover, button:disabled:hover, a:disabled:hover{
+    cursor: not-allowed;
+}
+
+input, textarea, select{
+    outline: none;
+}
