@@ -69,14 +69,14 @@ export function PracticeSelection() {
         category: "Django"
       },
       {
-        id: "python_base",
+        id: "Основа",
         name: "Основы Python",
         icon: <Zap className="text-yellow-600" />,
         description: "Синтаксис, типы данных и циклы",
         category: "Основа"
       },
       {
-        id: "python_adv",
+        id: "Продвинутый",
         name: "Продвинутый Python",
         icon: <Sparkles className="text-purple-500" />,
         description: "ООП, декораторы и генераторы",
@@ -85,14 +85,14 @@ export function PracticeSelection() {
     ],
     java: [
       {
-        id: "java_base",
+        id: "Java основы",
         name: "Основы Java",
         icon: <BookOpen className="text-amber-500" />,
         description: "Синтаксис, типы данных и циклы",
         category: "java основа"
       },
       {
-        id: "java_adv",
+        id: "Java продвинутый",
         name: "Продвинутый Java",
         icon: <Sparkles className="text-purple-500" />,
         description: "ООП, декораторы и генераторы",
