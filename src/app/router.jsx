@@ -19,7 +19,7 @@ import { Lider } from "@/pages/profile/Lider";
 import { PracticeTestPage } from "@/pages/profile/PracticeTestPage";
 import { PracticeHistoryPage } from "@/pages/profile/PracticeHistoryPage";
 import { CreatorPage } from "@/pages/profile/CreatorPage";
-// import { AddQuestion } from "@/pages/admin/add-question/AddQuestion";
+import { AddQuestion } from "@/pages/admin/add-question/AddQuestion";
 
 export const router = createBrowserRouter([
   {
@@ -102,10 +102,10 @@ export const router = createBrowserRouter([
         path: "leaderboard",
         element: <Lider />,
       },
-      // {
-      //   path:"add-question",
-      //   element:<AddQuestion/>
-      // }
+      {
+        path:"add-question",
+        element:<AddQuestion/>
+      }
     ],
   },
   {
