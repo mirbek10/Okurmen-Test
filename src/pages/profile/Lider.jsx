@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect } from "react";
 import { useLeaderboardStore } from "@/app/stores/admin/leaderboardStore";
+import { axiosUser } from "@/shared/lib/api/axiosUser";
 import {
   Loader,
   Search,
@@ -12,6 +13,55 @@ import {
   ChevronRight,
   ChevronLeft,
 } from "lucide-react";
+
+const getAvatarInitial = (username = "") => {
+  const safeName = String(username || "").trim();
+  return safeName ? safeName[0].toUpperCase() : "?";
+};
+
+function AvatarWithFallback({
+  src,
+  username,
+  alt,
+  imgClassName,
+  fallbackClassName,
+}) {
+  const [hasError, setHasError] = React.useState(!src);
+
+  React.useEffect(() => {
+    setHasError(!src);
+  }, [src]);
+
+  if (hasError) {
+    return (
+      <div className={fallbackClassName}>
+        {getAvatarInitial(username)}
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt || username}
+      className={imgClassName}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
+const getLeaderboardWsUrl = () => {
+  try {
+    const apiBase = axiosUser.defaults.baseURL;
+    if (!apiBase) return null;
+
+    const apiUrl = new URL(apiBase);
+    const protocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${apiUrl.host}/ws`;
+  } catch (error) {
+    return null;
+  }
+};
 
 export function Lider() {
   const {
@@ -32,6 +82,33 @@ export function Lider() {
     fetchTopUsers(10);
     fetchUsers();
   }, [fetchTopUsers, fetchUsers]);
+
+  useEffect(() => {
+    const wsUrl = getLeaderboardWsUrl();
+    if (!wsUrl) return undefined;
+
+    const socket = new WebSocket(wsUrl);
+
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message?.type === "leaderboard:updated") {
+          refreshData();
+        }
+      } catch (error) {
+        // Ignore non-JSON websocket messages
+      }
+    };
+
+    return () => {
+      if (
+        socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING
+      ) {
+        socket.close();
+      }
+    };
+  }, [refreshData]);
 
   const handleSearchChange = (e) => setFilters({ search: e.target.value });
   const handleSortChange = (sortBy) => setFilters({ sortBy });
@@ -138,10 +215,12 @@ export function Lider() {
                 {/* Аватар */}
                 <div className="relative shrink-0">
                   <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-full p-1 bg-gradient-to-tr from-indigo-500 to-pink-500 shadow-md">
-                    <img
+                    <AvatarWithFallback
                       src={user.avatar}
+                      username={user.username}
                       alt={user.username}
-                      className="w-full h-full rounded-full object-cover border-2 border-white"
+                      imgClassName="w-full h-full rounded-full object-cover border-2 border-white"
+                      fallbackClassName="w-full h-full rounded-full border-2 border-white bg-white text-indigo-600 font-black flex items-center justify-center text-lg sm:text-2xl"
                     />
                   </div>
                 </div>
@@ -234,10 +313,12 @@ export function Lider() {
 
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="relative shrink-0">
-                        <img
+                        <AvatarWithFallback
                           src={user.avatar}
-                          className={`w-10 h-10 md:w-13 md:h-13 rounded-xl object-cover shadow-sm ${isYou ? "ring-2 ring-indigo-500 ring-offset-2" : ""}`}
-                          alt=""
+                          username={user.username}
+                          alt={user.username}
+                          imgClassName={`w-10 h-10 md:w-13 md:h-13 rounded-xl object-cover shadow-sm ${isYou ? "ring-2 ring-indigo-500 ring-offset-2" : ""}`}
+                          fallbackClassName={`w-10 h-10 md:w-13 md:h-13 rounded-xl shadow-sm bg-indigo-100 text-indigo-700 font-black flex items-center justify-center ${isYou ? "ring-2 ring-indigo-500 ring-offset-2" : ""}`}
                         />
                         {isYou && (
                           <div className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md shadow-sm border border-white uppercase tracking-tighter">
