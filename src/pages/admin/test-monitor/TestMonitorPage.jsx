@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { useTestStore } from "@/app/stores/admin/getTsetById";
 import { useAdminStartStore } from "@/app/stores/admin/startTest";
@@ -10,12 +10,26 @@ import { StudentAnswersModal } from "./ui/StudentAnswersModal"; // Импорт�
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { useAdminArchiveTestStore } from "@/app/stores/admin/adminArchiveTest";
+import { axiosAdmin } from "@/shared/lib/api/axiosAdmin";
 
 const categoryNames = {
   html: "HTML/CSS",
   "js-basic": "JavaScript начальный уровень",
   "js-advanced": "JavaScript продвинутый уровень",
   react: "React",
+};
+
+const getAdminWsUrl = () => {
+  try {
+    const apiBase = axiosAdmin.defaults.baseURL;
+    if (!apiBase) return null;
+
+    const apiUrl = new URL(apiBase);
+    const protocol = apiUrl.protocol === "https:" ? "wss:" : "ws:";
+    return `${protocol}//${apiUrl.host}/ws`;
+  } catch (error) {
+    return null;
+  }
 };
 
 export default function TestMonitorPage() {
@@ -26,6 +40,7 @@ export default function TestMonitorPage() {
   const [timerStarted, setTimerStarted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null); // Для модалки
+  const lastWsEventKeyRef = useRef("");
 
   // Получаем данные из Zustand
   const { getTestById, loading, error, test } = useTestStore();
@@ -48,6 +63,86 @@ export default function TestMonitorPage() {
   useEffect(() => {
     getTestById(testId);
   }, [testId]);
+
+  useEffect(() => {
+    const wsUrl = getAdminWsUrl();
+    if (!wsUrl || !testId) return undefined;
+
+    const socket = new WebSocket(wsUrl);
+    const currentTestId = Number(testId);
+
+    const isCurrentTestEvent = (payload = {}) => {
+      const payloadTestId = Number(payload.testId);
+      if (Number.isFinite(payloadTestId) && payloadTestId === currentTestId) {
+        return true;
+      }
+
+      if (test?.code && payload.testCode && String(payload.testCode) === String(test.code)) {
+        return true;
+      }
+
+      return false;
+    };
+
+    const notifyAdminByEvent = (type, payload = {}) => {
+      const studentName = payload?.student?.name || "Студент";
+
+      if (type === "test:student_joined") {
+        toast.info(`${studentName} вошел в тест`);
+      }
+      if (type === "test:student_finished") {
+        toast.success(`${studentName} завершил тест`);
+      }
+      if (type === "test:student_force_finished") {
+        toast.warn(`${studentName} завершил тест принудительно`);
+      }
+      if (type === "test:student_removed") {
+        toast.warn(`${studentName} удален из теста`);
+      }
+      if (type === "test:started") {
+        toast.success("Тест запущен");
+      }
+      if (type === "test:stopped") {
+        toast.info("Тест остановлен");
+      }
+      if (type === "test:archived") {
+        toast.success("Тест архивирован");
+      }
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (!message?.type || !String(message.type).startsWith("test:")) {
+          return;
+        }
+
+        if (!isCurrentTestEvent(message.payload)) {
+          return;
+        }
+
+        const dedupeKey = `${message.type}:${message.payload?.student?.id || ""}:${message.timestamp || ""}`;
+        if (lastWsEventKeyRef.current === dedupeKey) {
+          return;
+        }
+        lastWsEventKeyRef.current = dedupeKey;
+
+        notifyAdminByEvent(message.type, message.payload);
+        getTestById(testId);
+      } catch (error) {
+        // Ignore malformed websocket payloads
+      }
+    };
+
+    return () => {
+      if (
+        socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING
+      ) {
+        socket.close();
+      }
+    };
+  }, [testId, test?.code, getTestById]);
 
   // Инициализация таймера при загрузке теста
   // 1. Инициализация начального времени (только когда тест еще не запущен)
