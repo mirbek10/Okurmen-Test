@@ -18,6 +18,7 @@ export function TeachersPage() {
   const [editSubjects, setEditSubjects] = useState("");
 
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [createForm, setCreateForm] = useState({
     name: "",
     email: "",
@@ -115,6 +116,7 @@ export function TeachersPage() {
 
   const openCreateModal = () => {
     setCreateForm({ name: "", email: "", password: "", subjects: "" });
+    setShowCreatePassword(false);
     setShowCreateModal(true);
   };
 
@@ -424,13 +426,52 @@ export function TeachersPage() {
                 value={createForm.email}
                 onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
               />
-              <input
-                type="password"
-                className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400"
-                placeholder="Пароль"
-                value={createForm.password}
-                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-              />
+              <div className="relative">
+                <input
+                  type={showCreatePassword ? "text" : "password"}
+                  className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400 pl-10"
+                  placeholder="Пароль"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCreatePassword((prev) => !prev)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  aria-label={showCreatePassword ? "Скрыть пароль" : "Показать пароль"}
+                >
+                  {showCreatePassword ? (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 3l18 18M10.58 10.58a2 2 0 002.83 2.83M9.88 5.09A9.53 9.53 0 0112 5c5 0 9 4.5 9 7 0 1.23-.7 2.7-1.88 4.03M6.11 6.11C3.82 7.64 2 10.02 2 12c0 2.5 4 7 10 7 1.05 0 2.06-.14 3-.4"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"
+                      />
+                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth={2} />
+                    </svg>
+                  )}
+                </button>
+              </div>
               <input
                 className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400"
                 placeholder="Предметы через запятую"
