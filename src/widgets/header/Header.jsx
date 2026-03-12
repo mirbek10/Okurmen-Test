@@ -10,6 +10,7 @@ const navItems = [
   { path: "/admin/resalt", label: "Результаты" },
   { path: "/admin/leaderboard", label: "Рейтинг" },
   { path: "/admin/teachers", label: "Преподаватели" },
+  { path: "/admin/teachers-leaderboard", label: "Рейтинг учителей" },
   { path: "/admin/add-question", label: "Добавить вопрос c JSON" },
 ];
 
