@@ -23,6 +23,7 @@ import { AddQuestion } from "@/pages/admin/add-question/AddQuestion";
 import { TeacherDashboard } from "@/pages/teacher/TeacherDashboard";
 import { TeacherLeaderboard } from "@/pages/teacher/TeacherLeaderboard";
 import { TeachersPage } from "@/pages/admin/teachers/Teachers";
+import { TeachersLeaderboardPage } from "@/pages/admin/teachers/TeachersLeaderboardPage";
 
 export const router = createBrowserRouter([
   {
@@ -108,6 +109,10 @@ export const router = createBrowserRouter([
       {
         path: "teachers",
         element: <TeachersPage />,
+      },
+      {
+        path: "teachers-leaderboard",
+        element: <TeachersLeaderboardPage />,
       },
       {
         path:"add-question",
