@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { axiosAdmin } from "../../../shared/lib/api/axiosAdmin";
 
 export const useTestCategoryStore = create((set) => ({
@@ -24,3 +24,4 @@ export const useTestCategoryStore = create((set) => ({
         }
     }
 }));
+

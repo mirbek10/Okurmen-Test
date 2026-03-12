@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState, useRef } from "react";
 import { ShieldAlert, RefreshCw } from "lucide-react";
 
@@ -74,3 +74,4 @@ export default function FocusGuard({ reload, isTestActive }) {
     </div>
   );
 }
+

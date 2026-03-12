@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import Cookies from "js-cookie";
 export const axiosAdmin = axios.create({
   baseURL: "https://beckend-test-sqyj.onrender.com/api/",
@@ -21,4 +21,6 @@ axiosAdmin.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error);
 });
+
+
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import LoadingSpinner from "@/shared/ui/LoadingSpinner";
@@ -11,22 +11,31 @@ import {
   History,
   Code2,
   Menu,
-  X    
+  X
 } from "lucide-react";
 import Cookies from "js-cookie";
+import { useAuthStore } from "@/app/stores/auth/authStore";
 
 export default function ProfileLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, fetchUserProfile } = useAuthStore();
 
   useEffect(() => {
     setIsLoading(false);
-    setIsMobileMenuOpen(false); 
+    setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const menuItems = [
+  useEffect(() => {
+    const token = Cookies.get("userToken");
+    if (token && !user) {
+      fetchUserProfile();
+    }
+  }, [user, fetchUserProfile]);
+
+  const baseItems = [
     { id: "profile", label: "Профиль", icon: <User size={20} />, href: "/user/profile" },
     { id: "test", label: "Тесты", icon: <BookOpen size={20} />, href: "/user/tests" },
     { id: "history", label: "История", icon: <History size={20} />, href: "/user/history" },
@@ -34,8 +43,14 @@ export default function ProfileLayout() {
     { id: "creator", label: "Создатель", icon: <Code2 size={20} />, href: "/user/creator" }
   ];
 
-  const mainNavItems = menuItems.slice(0, 3);
-  
+  const teacherItems = user?.role === "teacher" ? [
+    { id: "teacher-dashboard", label: "Учитель: Панель", icon: <LayoutDashboard size={20} />, href: "/teacher/dashboard" },
+    { id: "teacher-leaderboard", label: "Учитель: Рейтинг", icon: <Trophy size={20} />, href: "/teacher/leaderboard" }
+  ] : [];
+
+  const menuItems = [...baseItems, ...teacherItems];
+  const mainNavItems = baseItems.slice(0, 3);
+
   const activeTab = menuItems.find((item) => location.pathname.includes(item.href))?.id || "profile";
 
   const handleLogout = () => {
@@ -47,7 +62,6 @@ export default function ProfileLayout() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans text-slate-800">
-      
       <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen">
         <div className="p-6 flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
@@ -59,7 +73,23 @@ export default function ProfileLayout() {
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-2">
-          {menuItems.map((item) => (
+          {baseItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.href}
+              className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all ${
+                activeTab === item.id ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-slate-500 hover:bg-slate-50"
+              }`}
+            >
+              {item.icon}
+              <span className="font-bold text-sm">{item.label}</span>
+            </Link>
+          ))}
+
+          {teacherItems.length > 0 && (
+            <div className="px-4 pt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">Преподаватель</div>
+          )}
+          {teacherItems.map((item) => (
             <Link
               key={item.id}
               to={item.href}
@@ -115,7 +145,22 @@ export default function ProfileLayout() {
 
             <div className="grid grid-cols-1 gap-2">
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-4">Навигация</p>
-                {menuItems.map((item) => (
+                {baseItems.map((item) => (
+                    <Link
+                        key={item.id}
+                        to={item.href}
+                        className={`flex items-center gap-4 px-4 py-4 rounded-2xl ${
+                            activeTab === item.id ? "bg-indigo-50 text-indigo-600" : "text-slate-600"
+                        }`}
+                    >
+                        {item.icon}
+                        <span className="font-bold">{item.label}</span>
+                    </Link>
+                ))}
+                {teacherItems.length > 0 && (
+                  <div className="px-4 pt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">Преподаватель</div>
+                )}
+                {teacherItems.map((item) => (
                     <Link
                         key={item.id}
                         to={item.href}

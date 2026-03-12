@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState, useEffect } from "react";
 import { Clock, AlertCircle, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -227,3 +227,5 @@ export const WaitingList = () => {
     </div>
   );
 };
+
+

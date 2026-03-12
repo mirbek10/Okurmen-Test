@@ -1,4 +1,4 @@
-export const html = [
+﻿export const html = [
     {
     id: 1,
     level: "HTML/CSS",
@@ -104,3 +104,5 @@ export const html = [
     ],
     answer: 0
 },]
+
+

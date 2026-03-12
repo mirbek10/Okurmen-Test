@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router-dom";
+﻿import { Outlet, useNavigate } from "react-router-dom";
 import { Header } from "../header/Header";
 import Cookies from "js-cookie";
 import { useEffect } from "react";
@@ -19,3 +19,5 @@ function AdminLayout() {
 }
 
 export default AdminLayout;
+
+

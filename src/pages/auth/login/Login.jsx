@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "@/app/stores/auth/authStore";
 import Cookies from "js-cookie";
@@ -7,7 +7,7 @@ const Login = () => {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
 
-  const { login, loading, error, clearError, token } = useAuthStore();
+  const { login, loading, error, clearError, user, fetchUserProfile } = useAuthStore();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -36,10 +36,16 @@ const Login = () => {
 
   useEffect(() => {
     const userToken = Cookies.get("userToken");
-    if (userToken) {
+    if (userToken && !user) {
+      fetchUserProfile();
+    }
+  }, [navigate, fetchUserProfile, user]);
+
+  useEffect(() => {
+    if (user) {
       navigate("/user/profile");
     }
-  }, [navigate]);
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -214,3 +220,5 @@ const Login = () => {
 };
 
 export default Login;
+
+

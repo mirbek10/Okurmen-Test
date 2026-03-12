@@ -1,4 +1,4 @@
-import { axiosUser } from './../../../shared/lib/api/axiosUser';
+﻿import { axiosUser } from './../../../shared/lib/api/axiosUser';
 import { create } from "zustand";
 import Cookies from "js-cookie";
 
@@ -32,3 +32,4 @@ export const useUserJoinStore = create<userJoinState>((set, get) => ({
         set({ user: null });
     }
 }));
+

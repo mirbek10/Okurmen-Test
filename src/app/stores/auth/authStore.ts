@@ -1,6 +1,5 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { axiosUser } from '@/shared/lib/api/axiosUser';
-import { axiosAdmin } from '@/shared/lib/api/axiosAdmin';
 import Cookies from 'js-cookie';
 
 interface User {
@@ -8,6 +7,9 @@ interface User {
     username: string;
     email: string;
     avatar?: string;
+    role?: string;
+    name?: string;
+    subjects?: string[];
     createdAt: string;
     updatedAt: string;
     testFinished: number;
@@ -36,6 +38,8 @@ interface User {
     testsCompleted: number;
     lastLogin: string;
     rating: number;
+    testsCount?: number;
+    studentsCount?: number;
 }
 
 interface AuthState {
@@ -45,11 +49,11 @@ interface AuthState {
     error: string | null;
     response: any;
 
-    register: (username: string, email: string, password: string) => Promise<void>;
-    login: (identifier: string, password: string) => Promise<void>;
+    register: (username: string, email: string, password: string) => Promise<User | null>;
+    login: (identifier: string, password: string) => Promise<User | null>;
     logout: () => void;
     clearError: () => void;
-    fetchUserProfile: () => Promise<void>;
+    fetchUserProfile: () => Promise<User | null>;
     updateAvatar: (avatarUrl: string) => Promise<void>;
 }
 
@@ -70,7 +74,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             });
 
             set({
-                user: response.data.success ? response.data.user : null,
+                user: response.data.user || null,
                 token: response.data.token || null,
                 loading: false,
             });
@@ -78,9 +82,10 @@ export const useAuthStore = create<AuthState>((set) => ({
             if (response.data.token) {
                 Cookies.set('userToken', response.data.token, { expires: 7 });
             }
+            return response.data.user || null;
         } catch (error: any) {
             set({
-                error: error.response?.data?.message || 'Registration failed',
+                error: error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed',
                 loading: false
             });
             throw error;
@@ -96,7 +101,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             });
 
             set({
-                user: response.data.success ? response.data.user : null,
+                user: response.data.user || null,
                 token: response.data.token || null,
                 loading: false
             });
@@ -104,9 +109,10 @@ export const useAuthStore = create<AuthState>((set) => ({
             if (response.data.token) {
                 Cookies.set('userToken', response.data.token, { expires: 7 });
             }
+            return response.data.user || null;
         } catch (error: any) {
             set({
-                error: error.response?.data?.message || 'Login failed',
+                error: error.response?.data?.error || error.response?.data?.message || error.message || 'Login failed',
                 loading: false
             });
             throw error;
@@ -124,13 +130,14 @@ export const useAuthStore = create<AuthState>((set) => ({
             const response = await axiosUser.get('/auth/me');
 
             set({
-                user: response.data.success ? response.data.user : null,
+                user: response.data.user || null,
                 loading: false,
                 response: response
             });
+            return response.data.user || null;
         } catch (error: any) {
             set({
-                error: error.response?.data?.message || 'Failed to fetch user profile',
+                error: error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch user profile',
                 loading: false
             });
             throw error;
@@ -145,12 +152,12 @@ export const useAuthStore = create<AuthState>((set) => ({
             });
 
             set(prevState => ({
-                user: prevState.user ? { ...prevState.user, avatar: response.data.success ? response.data.user?.avatar : prevState.user.avatar } : null,
+                user: prevState.user ? { ...prevState.user, avatar: response.data.avatarUrl || prevState.user.avatar } : null,
                 loading: false
             }));
         } catch (error: any) {
             set({
-                error: error.response?.data?.message || 'Failed to update avatar',
+                error: error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update avatar',
                 loading: false
             });
             throw error;
@@ -159,3 +166,6 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     clearError: () => set({ error: null })
 }));
+
+
+

@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+﻿import { Outlet } from "react-router-dom";
 function UserLayout() {
   return (
     <div>
@@ -8,3 +8,5 @@ function UserLayout() {
 }
 
 export default UserLayout;
+
+

@@ -1,4 +1,4 @@
-export const React = [
+﻿export const React = [
     {
         id: 31,
         level: "React",
@@ -115,3 +115,4 @@ export const React = [
         answer: 2
     }
 ]
+

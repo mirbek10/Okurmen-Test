@@ -1,4 +1,4 @@
-export const JS_Basic = [{
+﻿export const JS_Basic = [{
     id: 11,
     level: "JS Basic",
     question: "Как объявить переменную?",
@@ -83,3 +83,4 @@ export const JS_Basic = [{
     options: ["for", "while", "do...while", "loop"],
     answer: 0
 },]
+

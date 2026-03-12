@@ -1,10 +1,15 @@
-import { create } from "zustand"
+﻿import { create } from "zustand"
 import { axiosAdmin } from './../../../shared/lib/api/axiosAdmin';
 
 interface adminData {
     category: string;
     maxStudents: number;
-    testDuration: number
+    testDuration: number;
+    group?: string;
+    teacher?: string;
+    teacherId?: string;
+    testName?: string;
+    totalQuestions?: number;
 }
 
 type useAdminPreviewStore = {
@@ -35,3 +40,5 @@ export const useAdminPreviewStore = create<useAdminPreviewStore>((set, get) => (
     },
       clearRes: () => set({ res: null }),
 }))
+
+

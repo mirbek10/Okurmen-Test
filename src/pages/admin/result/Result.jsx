@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useAdminGetTestStore } from "@/app/stores/admin/adminGetTest";
 import {
@@ -445,3 +445,5 @@ function StatCard({ icon, label, value, color }) {
 }
 
 export default Result;
+
+
