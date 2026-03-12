@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+﻿import { createBrowserRouter } from "react-router-dom";
 
 import UserLayout from "../widgets/layout/UserLayout";
 import { NotFound } from "../widgets/not-found/not-found.jsx";
@@ -20,6 +20,9 @@ import { PracticeTestPage } from "@/pages/profile/PracticeTestPage";
 import { PracticeHistoryPage } from "@/pages/profile/PracticeHistoryPage";
 import { CreatorPage } from "@/pages/profile/CreatorPage";
 import { AddQuestion } from "@/pages/admin/add-question/AddQuestion";
+import { TeacherDashboard } from "@/pages/teacher/TeacherDashboard";
+import { TeacherLeaderboard } from "@/pages/teacher/TeacherLeaderboard";
+import { TeachersPage } from "@/pages/admin/teachers/Teachers";
 
 export const router = createBrowserRouter([
   {
@@ -103,9 +106,27 @@ export const router = createBrowserRouter([
         element: <Lider />,
       },
       {
+        path: "teachers",
+        element: <TeachersPage />,
+      },
+      {
         path:"add-question",
         element:<AddQuestion/>
       }
+    ],
+  },
+  {
+    path: "/teacher",
+    element: <ProfileLayout />,
+    children: [
+      {
+        path: "dashboard",
+        element: <TeacherDashboard />,
+      },
+      {
+        path: "leaderboard",
+        element: <TeacherLeaderboard />,
+      },
     ],
   },
   {
@@ -113,3 +134,5 @@ export const router = createBrowserRouter([
     element: <NotFound />,
   },
 ]);
+
+

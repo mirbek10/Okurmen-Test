@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { axiosUser } from '@/shared/lib/api/axiosUser';
 
 
@@ -121,3 +121,4 @@ export const useLeaderboardStore = create((set, get) => ({
     get().fetchTopUsers();
   },
 }));
+

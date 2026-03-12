@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import Cookies from "js-cookie";
 
 export const axiosUser = axios.create({
@@ -19,4 +19,6 @@ axiosUser.interceptors.request.use((config) => {
 }, (error) => {
   return Promise.reject(error);
 });
+
+
 

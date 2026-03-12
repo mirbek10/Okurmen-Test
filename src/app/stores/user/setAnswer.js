@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { axiosUser } from "@/shared/lib/api/axiosUser";
 
 export const useSetAnswere = create((set, get) => ({
@@ -30,3 +30,4 @@ export const useSetAnswere = create((set, get) => ({
         }
     }
 }));
+

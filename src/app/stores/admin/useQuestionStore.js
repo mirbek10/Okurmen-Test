@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import { axiosAdmin } from '@/shared/lib/api/axiosAdmin';
 
 const cleanText = (text) => {
@@ -102,3 +102,4 @@ export const useQuestionStore = create((set, get) => ({
     },
     clearError: () => set({ error: null })
 }));
+

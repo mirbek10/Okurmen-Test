@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { axiosAdmin } from './../../../shared/lib/api/axiosAdmin';
 
 interface AdminStartPayload {
@@ -37,3 +37,5 @@ export const useAdminStartStore = create<UseAdminStartStore>((set) => ({
         }
     },
 }));
+
+

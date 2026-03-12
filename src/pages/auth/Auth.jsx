@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 
 export function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -66,3 +66,4 @@ export function Auth() {
     </div>
   );
 }
+

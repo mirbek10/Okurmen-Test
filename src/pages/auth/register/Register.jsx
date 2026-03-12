@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "@/app/stores/auth/authStore";
 
@@ -79,8 +79,7 @@ const Register = () => {
             </p>
           </div>
 
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="space-y-2">
+          <form onSubmit={handleRegister} className="space-y-4"><div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Username
               </label>
@@ -183,9 +182,7 @@ const Register = () => {
                   </svg>
                 </div>
               </div>
-            </div>
-
-            <div className="space-y-2">
+            </div><div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
                 Confirm Password
               </label>
@@ -292,3 +289,7 @@ const Register = () => {
 };
 
 export default Register;
+
+
+
+

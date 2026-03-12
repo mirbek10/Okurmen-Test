@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+﻿import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Layout,
@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAdminPreviewStore } from "@/app/stores/admin/adminPreview";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
+import { axiosAdmin } from "@/shared/lib/api/axiosAdmin";
 
 import { useTestCategoryStore } from "@/app/stores/all/getTestCategory";
 
@@ -42,10 +43,13 @@ export function Dashboard() {
   const [maxStudents, setMaxStudents] = useState(30);
   const [duration, setDuration] = useState(60);
   const [group, setGroup] = useState("");
-  const [teacher, setTeacher] = useState("");
+  const [teacherId, setTeacherId] = useState("");
   const [error, setError] = useState("");
   const [tests, setTests] = useState([]);
   const [isCreatingTest, setIsCreatingTest] = useState(false);
+  const [teachers, setTeachers] = useState([]);
+  const [teachersLoading, setTeachersLoading] = useState(false);
+  const [teachersError, setTeachersError] = useState("");
 
   const navigate = useNavigate();
   const redirectRef = useRef(false);
@@ -53,6 +57,19 @@ export function Dashboard() {
   useEffect(() => {
     fetchQuestions();
     fetchTestCategories();
+    const loadTeachers = async () => {
+      setTeachersLoading(true);
+      setTeachersError("");
+      try {
+        const response = await axiosAdmin.get("/teachers/get");
+        setTeachers(response.data?.teachers || []);
+      } catch (err) {
+        setTeachersError("Не удалось загрузить преподавателей");
+      } finally {
+        setTeachersLoading(false);
+      }
+    };
+    loadTeachers();
     return () => {
       if (redirectRef.current) clearRes();
     };
@@ -102,7 +119,7 @@ export function Dashboard() {
         setShowSettingsModal(false);
         setSelectedTest(null);
         setGroup("");
-        setTeacher("");
+        setTeacherId("");
         setError("");
         clearRes();
       }, 100);
@@ -117,7 +134,8 @@ export function Dashboard() {
 
   const handleStartTest = async () => {
     if (!selectedTest) return;
-    if (!group.trim() || !teacher.trim()) {
+    const selectedTeacher = teachers.find((item) => item.userId === teacherId || item._id === teacherId);
+    if (!group.trim() || !teacherId || !selectedTeacher) {
       setError("Заполните обязательные поля");
       return;
     }
@@ -127,7 +145,8 @@ export function Dashboard() {
       await start({
         category: selectedTest.category,
         group: group.trim(),
-        teacher: teacher.trim(),
+        teacher: selectedTeacher.name,
+        teacherId: selectedTeacher.userId || selectedTeacher._id,
         maxStudents: parseInt(maxStudents),
         testDuration: parseInt(duration),
         testName: selectedTest.name,
@@ -146,7 +165,7 @@ export function Dashboard() {
       react: "text-blue-500 bg-blue-50",
       typescript: "text-indigo-600 bg-indigo-50",
       Django: "text-emerald-700 bg-emerald-50",
-      Основа: "text-green-600 bg-green-50",
+      "Основа": "text-green-600 bg-green-50",
       frontend: "text-purple-600 bg-purple-50",
       backend: "text-slate-700 bg-slate-100",
       "Продвинутый": "text-rose-600 bg-rose-50",
@@ -270,12 +289,29 @@ export function Dashboard() {
                     <label className="text-xs font-bold text-slate-400 flex items-center gap-2">
                       <User className="w-3 h-3" /> ПРЕПОДАВАТЕЛЬ
                     </label>
-                    <input
-                      value={teacher}
-                      onChange={(e) => setTeacher(e.target.value)}
+                    <select
+                      value={teacherId}
+                      onChange={(e) => setTeacherId(e.target.value)}
                       className="w-full bg-slate-50 rounded-2xl px-5 py-3.5 outline-none focus:ring-2 ring-indigo-500/20 font-bold border border-transparent focus:border-indigo-500 transition-all"
-                      placeholder="ID"
-                    />
+                    >
+                      <option value="">
+                        {teachersLoading
+                          ? "Загрузка..."
+                          : teachers.length === 0
+                            ? "Нет преподавателей"
+                            : "Выберите преподавателя"}
+                      </option>
+                      {teachers.map((item) => (
+                        <option key={item._id} value={item.userId || item._id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                    {teachersError && (
+                      <p className="text-[10px] text-red-500 font-bold">
+                        {teachersError}
+                      </p>
+                    )}
                   </div>
                 </div>
 

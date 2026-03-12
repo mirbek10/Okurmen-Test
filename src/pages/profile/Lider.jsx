@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useEffect } from "react";
 import { useLeaderboardStore } from "@/app/stores/admin/leaderboardStore";
 import { axiosUser } from "@/shared/lib/api/axiosUser";
@@ -416,3 +416,5 @@ export function Lider() {
     </div>
   );
 }
+
+

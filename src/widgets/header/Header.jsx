@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 
 import { FiMenu, FiX, FiLogOut } from "react-icons/fi";
@@ -8,7 +8,8 @@ const navItems = [
   { path: "/admin/dashboard", label: "Главная" },
   { path: "/admin/questions", label: "Вопросы" },
   { path: "/admin/resalt", label: "Результаты" },
-  { path: "/admin/leaderboard", label: "Рейтинг" },
+  { path: "/admin/leaderboard", label: "Рейтинг" },
+  { path: "/admin/teachers", label: "Преподаватели" },
   { path: "/admin/add-question", label: "Добавить вопрос c JSON" },
 ];
 
@@ -204,3 +205,6 @@ export function Header() {
 }
 
 export default Header;
+
+
+
