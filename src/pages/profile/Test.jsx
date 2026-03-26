@@ -115,7 +115,7 @@ export function PracticeSelection() {
         category: "basics",
       },
       {
-        id: "flutter3",
+        id: "dart1",
         name: "Продвинутый Flutter",
         icon: <Sparkles className="text-purple-500" />,
         description: "ООП, state management, архитектура",
