@@ -6,7 +6,8 @@ interface userJoinState {
     loading: boolean;
     error: string | null;
     user: any;
-    join: (name: string, code: string, email: string) => Promise<void>;
+    join: (name: string, code: string, email: string) => Promise<any>;
+    clearError: () => void;
     logout: () => void;
 }
 
@@ -14,6 +15,7 @@ export const useUserJoinStore = create<userJoinState>((set, get) => ({
     loading: false,
     error: null,
     user: null,
+    clearError: () => set({ error: null }),
     join: async (name: string, code: string, email: string) => {
         try {
             set({ loading: true, error: null });
@@ -21,8 +23,11 @@ export const useUserJoinStore = create<userJoinState>((set, get) => ({
             const user = response.data;
             Cookies.set("user", user)
             set({ user });
+            return user;
         } catch (error) {
-            set({ error: (error as Error).message });
+            const message = (error as any).response?.data?.error || (error as any).response?.data?.message || (error as Error).message || 'Не удалось подключиться к тесту';
+            set({ error: message });
+            throw error;
         } finally {
             set({ loading: false });
         }

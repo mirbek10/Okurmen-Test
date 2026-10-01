@@ -1,4 +1,4 @@
-﻿import { axiosAdmin } from './../../../shared/lib/api/axiosAdmin';
+import { axiosAdmin } from './../../../shared/lib/api/axiosAdmin';
 import { create } from "zustand";
 import Cookies from "js-cookie";
 
@@ -7,6 +7,7 @@ interface AdminLoginState {
         error: string | null;
         admin: any;
         login: (name: string, code: string) => Promise<void>;
+        clearError: () => void;
         logout: () => void;
     }
     
@@ -14,6 +15,7 @@ interface AdminLoginState {
         loading: false,
         error: null,
         admin: null,
+        clearError: () => set({ error: null }),
         login: async (name: string, code: string) => {
             try {
                 set({ loading: true, error: null });
@@ -22,7 +24,7 @@ interface AdminLoginState {
                 Cookies.set('adminToken', admin.token);
                 set({ admin });
             } catch (error) {
-                set({ error: (error as Error).message });
+                set({ error: (error as any).response?.data?.error || (error as any).response?.data?.message || (error as Error).message });
             } finally {
                 set({ loading: false });
             }

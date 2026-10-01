@@ -44,15 +44,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-blue-100 bg-white/80 backdrop-blur-xl shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-800 rounded-lg flex items-center justify-center shadow-md">
-              <span className="text-white font-bold">✓</span>
-            </div>
-            <span className="hidden sm:inline bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent font-bold text-xl">
-              TestHub
-            </span>
-            <span className="sm:hidden text-blue-600 font-bold text-xl">TH</span>
-          </Link>
+          <Link to="/admin/dashboard" className="admin-brand-link"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></Link>
 
           <nav className="hidden md:flex items-center gap-6">
             {navItems.map((item) => (
@@ -96,13 +88,13 @@ export function Header() {
             ) : (
               <div className="flex items-center gap-3">
                 <Link
-                  to="/login"
+                  to="/auth/login"
                   className="text-sm text-slate-600 hover:text-blue-600 font-medium transition-colors"
                 >
                   Войти
                 </Link>
                 <Link
-                  to="/register"
+                  to="/auth/register"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
                 >
                   Регистрация
@@ -182,14 +174,14 @@ export function Header() {
               ) : (
                 <div className="px-4 py-2 space-y-2">
                   <Link
-                    to="/login"
+                    to="/auth/login"
                     onClick={() => setMenuOpen(false)}
                     className="block px-4 py-2 rounded-lg text-sm font-medium text-center bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                   >
                     Войти
                   </Link>
                   <Link
-                    to="/register"
+                    to="/auth/register"
                     onClick={() => setMenuOpen(false)}
                     className="block px-4 py-2 rounded-lg text-sm font-medium text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                   >
