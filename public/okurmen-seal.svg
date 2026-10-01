@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-labelledby="title">
+  <title id="title">Окурмэн — окуу борбору</title>
+  <rect width="400" height="400" fill="#fff"/>
+  <circle cx="200" cy="200" r="194" fill="none" stroke="#d87922" stroke-width="2"/>
+  <circle cx="200" cy="200" r="173" fill="none" stroke="#f58216" stroke-width="14"/>
+  <g fill="none" stroke="#f58216" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M106 142c20-13 43-20 59-17" stroke-width="10"/>
+    <path d="M246 125c18-5 38 0 55 15" stroke-width="10"/>
+    <rect x="108" y="151" width="80" height="47" rx="14" stroke-width="8"/>
+    <rect x="211" y="151" width="80" height="47" rx="14" stroke-width="8"/>
+    <path d="M188 165c7-7 16-7 23 0" stroke-width="8"/>
+  </g>
+  <text x="200" y="258" text-anchor="middle" font-family="Arial, sans-serif" font-size="53" font-weight="900" letter-spacing="-2" fill="#111b55">ОКУРМЭН</text>
+  <text x="200" y="296" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="800" letter-spacing="1" fill="#111b55">ОКУУ БОРБОРУ</text>
+</svg>

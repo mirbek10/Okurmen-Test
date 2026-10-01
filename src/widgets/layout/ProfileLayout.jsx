@@ -1,220 +1,56 @@
-﻿"use client";
-import React, { useState, useEffect } from "react";
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import LoadingSpinner from "@/shared/ui/LoadingSpinner";
-import {
-  User,
-  BookOpen,
-  Trophy,
-  LogOut,
-  LayoutDashboard,
-  History,
-  Code2,
-  Menu,
-  X
-} from "lucide-react";
+import { createElement, useState } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { BookOpen, ChartNoAxesColumn, ChevronRight, Code2, GraduationCap, History, KeyRound, LayoutDashboard, LogOut, Menu, Trophy, X } from "lucide-react";
 import Cookies from "js-cookie";
 import { useAuthStore } from "@/app/stores/auth/authStore";
 
+const primaryLinks = [
+  { to: "/user/profile", label: "Главная", Icon: LayoutDashboard },
+  { to: "/user/tests", label: "Тренировки", Icon: BookOpen },
+  { to: "/join-test", label: "Тест по коду", Icon: KeyRound },
+  { to: "/user/history", label: "История", Icon: History },
+];
+const extraLinks = [
+  { to: "/user/leaderboard", label: "Рейтинг", Icon: Trophy },
+  { to: "/user/creator", label: "О проекте", Icon: Code2 },
+];
+
 export default function ProfileLayout() {
-  const location = useLocation();
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, fetchUserProfile } = useAuthStore();
-
-  useEffect(() => {
-    setIsLoading(false);
-    setIsMobileMenuOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const token = Cookies.get("userToken");
-    if (token && !user) {
-      fetchUserProfile();
-    }
-  }, [user, fetchUserProfile]);
-
-  const baseItems = [
-    { id: "profile", label: "Профиль", icon: <User size={20} />, href: "/user/profile" },
-    { id: "test", label: "Тесты", icon: <BookOpen size={20} />, href: "/user/tests" },
-    { id: "history", label: "История", icon: <History size={20} />, href: "/user/history" },
-    { id: "leaderboard", label: "Рейтинг", icon: <Trophy size={20} />, href: "/user/leaderboard" },
-    { id: "creator", label: "Создатель", icon: <Code2 size={20} />, href: "/user/creator" }
-  ];
-
-  const teacherItems = user?.role === "teacher" ? [
-    { id: "teacher-dashboard", label: "Учитель: Панель", icon: <LayoutDashboard size={20} />, href: "/teacher/dashboard" },
-    { id: "teacher-leaderboard", label: "Учитель: Рейтинг", icon: <Trophy size={20} />, href: "/teacher/leaderboard" }
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const teacherLinks = user?.role === "teacher" ? [
+    { to: "/teacher/dashboard", label: "Панель преподавателя", Icon: GraduationCap },
+    { to: "/teacher/leaderboard", label: "Рейтинг преподавателей", Icon: ChartNoAxesColumn },
   ] : [];
-
-  const menuItems = [...baseItems, ...teacherItems];
-  const mainNavItems = baseItems.slice(0, 3);
-
-  const activeTab = menuItems.find((item) => location.pathname.includes(item.href))?.id || "profile";
+  const pageName = [...primaryLinks, ...extraLinks, ...teacherLinks].find((item) => item.to === location.pathname)?.label || "Кабинет";
 
   const handleLogout = () => {
-    navigate("/");
-    Cookies.remove("userToken");
+    logout();
     Cookies.remove("user");
-    window.location.reload();
+    localStorage.removeItem("user");
+    localStorage.removeItem("code");
+    navigate("/auth/login", { replace: true });
   };
+  const navItem = ({ to, label, Icon }) => <NavLink key={to} to={to} onClick={() => setMenuOpen(false)} className={({ isActive }) => `portal-link ${isActive ? "is-active" : ""}`}>{createElement(Icon, { size: 19, strokeWidth: 1.9 })}<span>{label}</span>{to === "/join-test" && <ChevronRight size={16} className="portal-link-arrow" />}</NavLink>;
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col md:flex-row font-sans text-slate-800">
-      <aside className="hidden md:flex w-72 bg-white border-r border-slate-200 flex-col sticky top-0 h-screen">
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-indigo-200">
-            <LayoutDashboard size={24} />
-          </div>
-          <span className="text-xl font-black bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
-            Student Portal
-          </span>
-        </div>
+  return <div className="portal-shell">
+    <aside className="portal-sidebar">
+      <Link to="/user/profile" className="portal-brand"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></Link>
+      <p className="portal-nav-caption">Обучение</p>
+      <nav aria-label="Основная навигация">{primaryLinks.map(navItem)}</nav>
+      <p className="portal-nav-caption portal-nav-caption-second">Дополнительно</p>
+      <nav aria-label="Дополнительная навигация">{extraLinks.map(navItem)}{teacherLinks.map(navItem)}</nav>
+      <div className="sidebar-bottom"><div className="account-mini"><span className="account-initial">{(user?.username || user?.name || "У").slice(0, 1).toUpperCase()}</span><span><b>{user?.username || user?.name || "Ученик"}</b><small>{user?.email || "Личный кабинет"}</small></span></div><button type="button" className="sidebar-logout" onClick={handleLogout}><LogOut size={18} /> Выйти</button></div>
+    </aside>
 
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          {baseItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.href}
-              className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all ${
-                activeTab === item.id ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-slate-500 hover:bg-slate-50"
-              }`}
-            >
-              {item.icon}
-              <span className="font-bold text-sm">{item.label}</span>
-            </Link>
-          ))}
-
-          {teacherItems.length > 0 && (
-            <div className="px-4 pt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">Преподаватель</div>
-          )}
-          {teacherItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.href}
-              className={`flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all ${
-                activeTab === item.id ? "bg-indigo-50 text-indigo-600 shadow-sm" : "text-slate-500 hover:bg-slate-50"
-              }`}
-            >
-              {item.icon}
-              <span className="font-bold text-sm">{item.label}</span>
-            </Link>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-slate-100">
-          <button className="w-full flex items-center gap-4 px-4 py-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all font-bold text-sm" onClick={handleLogout}>
-            <LogOut size={20} />
-            <span>Выйти</span>
-          </button>
-        </div>
-      </aside>
-
-      <header className="md:hidden sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-slate-100 px-5 py-3 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white">
-            <LayoutDashboard size={18} />
-          </div>
-          <span className="font-black text-slate-800">Student Portal</span>
-        </div>
-      </header>
-
-      <main className="flex-1 relative pb-24 md:pb-0 overflow-x-hidden">
-        <div className="p-4 md:p-12 max-w-5xl mx-auto">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-[60vh]"><LoadingSpinner /></div>
-          ) : (
-            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500"><Outlet /></div>
-          )}
-        </div>
-      </main>
-
-      {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsMobileMenuOpen(false)}>
-          <div 
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[32px] p-6 pt-10 animate-in slide-in-from-bottom-full duration-300"
-            onClick={e => e.stopPropagation()}
-          >
-            <button 
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="absolute top-4 right-6 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500"
-            >
-                <X size={20} />
-            </button>
-
-            <div className="grid grid-cols-1 gap-2">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 px-4">Навигация</p>
-                {baseItems.map((item) => (
-                    <Link
-                        key={item.id}
-                        to={item.href}
-                        className={`flex items-center gap-4 px-4 py-4 rounded-2xl ${
-                            activeTab === item.id ? "bg-indigo-50 text-indigo-600" : "text-slate-600"
-                        }`}
-                    >
-                        {item.icon}
-                        <span className="font-bold">{item.label}</span>
-                    </Link>
-                ))}
-                {teacherItems.length > 0 && (
-                  <div className="px-4 pt-4 text-[10px] text-slate-400 uppercase tracking-widest font-bold">Преподаватель</div>
-                )}
-                {teacherItems.map((item) => (
-                    <Link
-                        key={item.id}
-                        to={item.href}
-                        className={`flex items-center gap-4 px-4 py-4 rounded-2xl ${
-                            activeTab === item.id ? "bg-indigo-50 text-indigo-600" : "text-slate-600"
-                        }`}
-                    >
-                        {item.icon}
-                        <span className="font-bold">{item.label}</span>
-                    </Link>
-                ))}
-                <div className="h-px bg-slate-100 my-2" />
-                <button 
-                    onClick={handleLogout}
-                    className="flex items-center gap-4 px-4 py-4 rounded-2xl text-red-500 hover:bg-red-50"
-                >
-                    <LogOut size={20} />
-                    <span className="font-bold">Выйти из аккаунта</span>
-                </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-slate-100 px-2 pb-safe">
-        <div className="flex items-center justify-around py-2">
-          {mainNavItems.map((item) => (
-            <Link
-              key={item.id}
-              to={item.href}
-              className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all ${
-                activeTab === item.id ? "text-indigo-600" : "text-slate-400"
-              }`}
-            >
-              <div className={`p-1.5 rounded-lg ${activeTab === item.id ? "bg-indigo-50" : ""}`}>
-                {item.icon}
-              </div>
-              <span className="text-[10px] font-bold uppercase tracking-tight">{item.label}</span>
-            </Link>
-          ))}
-
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all ${
-                isMobileMenuOpen ? "text-indigo-600" : "text-slate-400"
-            }`}
-          >
-            <div className={`p-1.5 rounded-lg ${isMobileMenuOpen ? "bg-indigo-50" : ""}`}>
-              <Menu size={20} />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-tight">Меню</span>
-          </button>
-        </div>
-      </nav>
+    <div className="portal-content">
+      <header className="portal-topbar"><Link to="/user/profile" className="mobile-brand"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></Link><div className="desktop-page-name">{pageName}</div><div className="topbar-actions"><Link className="topbar-code" to="/join-test"><KeyRound size={17} /> Ввести код</Link><button className="mobile-menu-button" type="button" aria-label="Открыть меню" onClick={() => setMenuOpen(true)}><Menu size={22} /></button></div></header>
+      <main className="portal-main"><Outlet /></main>
     </div>
-  );
+
+    <nav className="mobile-bottom-nav" aria-label="Быстрая навигация">{primaryLinks.map(({ to, label, Icon }) => <NavLink key={to} to={to} className={({ isActive }) => `mobile-bottom-link ${isActive ? "is-active" : ""}`}>{createElement(Icon, { size: 21, strokeWidth: 1.9 })}<span>{label === "Тест по коду" ? "По коду" : label}</span></NavLink>)}</nav>
+    {menuOpen && <div className="mobile-menu-backdrop" onClick={() => setMenuOpen(false)}><div className="mobile-menu-panel" onClick={(event) => event.stopPropagation()}><div className="mobile-menu-heading"><b>Меню</b><button type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)}><X size={21} /></button></div><div className="mobile-menu-account">{user?.username || user?.name || "Ученик"}<small>{user?.email}</small></div><nav aria-label="Все разделы">{[...primaryLinks, ...extraLinks, ...teacherLinks].map(navItem)}</nav><button type="button" className="sidebar-logout" onClick={handleLogout}><LogOut size={18} /> Выйти из аккаунта</button></div></div>}
+  </div>;
 }

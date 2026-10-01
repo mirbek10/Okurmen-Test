@@ -13,7 +13,7 @@ export const useUserGetStatus = create((set, get) => ({
             
             set({ user });
         } catch (error) {
-            set({ error: (error).message });
+            set({ error: `${error.response?.status || ''} ${error.response?.data?.message || error.message}`.trim() });
         } finally {
             set({ loading: false });
         }

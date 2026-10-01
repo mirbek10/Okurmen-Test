@@ -1,247 +1,131 @@
-﻿import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { useAuthStore } from "@/app/stores/auth/authStore";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import Cookies from "js-cookie";
+import { useAuthStore } from "@/app/stores/auth/authStore";
+import { useAdminLoginStore } from "@/app/stores/admin/adminLogin";
 
-const Login = () => {
+export default function Login() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialMode = location.pathname === "/auth/register" ? "register" : "login";
+  const [mode, setMode] = useState(initialMode);
   const [identifier, setIdentifier] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
-  const { login, loading, error, clearError, user, fetchUserProfile } = useAuthStore();
-  const navigate = useNavigate();
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    clearError();
-
-    if (!identifier.trim() || !password.trim()) {
-      alert("Please fill in all fields.");
-      return;
-    }
-
-    try {
-      await login(identifier, password);
-      navigate("/user/profile");
-    } catch (err) {
-      console.error("Login error:", err);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleLogin(e);
-    }
-  };
+  const [formError, setFormError] = useState("");
+  const { user, login, register, loading, error, clearError, fetchUserProfile } = useAuthStore();
+  const { login: adminLogin, loading: adminLoading, error: adminError, admin, clearError: clearAdminError } = useAdminLoginStore();
 
   useEffect(() => {
-    const userToken = Cookies.get("userToken");
-    if (userToken && !user) {
-      fetchUserProfile();
-    }
-  }, [navigate, fetchUserProfile, user]);
+    setMode(initialMode);
+    setFormError("");
+    clearError();
+  }, [initialMode, clearError]);
 
   useEffect(() => {
     if (user) {
-      navigate("/user/profile");
+      navigate("/user/profile", { replace: true });
+    } else if (Cookies.get("userToken")) {
+      fetchUserProfile().catch((profileError) => {
+        if (profileError.response?.status === 401 || profileError.response?.status === 404) Cookies.remove("userToken");
+        else setFormError("Не удалось проверить текущий вход. Попробуйте войти снова.");
+        clearError();
+      });
     }
-  }, [user, navigate]);
+  }, [user, navigate, fetchUserProfile, clearError]);
+
+  useEffect(() => {
+    if (admin) navigate("/admin/dashboard", { replace: true });
+  }, [admin, navigate]);
+
+  const changeMode = (nextMode) => {
+    setMode(nextMode);
+    setFormError("");
+    setPassword("");
+    clearError();
+    clearAdminError();
+    if (nextMode !== "admin") navigate(nextMode === "register" ? "/auth/register" : "/auth/login", { replace: true });
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setFormError("");
+    clearError();
+    if (mode === "register") {
+      if (!username.trim() || !email.trim() || !password) return setFormError("Заполните все поля.");
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setFormError("Проверьте адрес электронной почты.");
+      if (password.length < 6) return setFormError("Пароль должен содержать минимум 6 символов.");
+      try {
+        const newUser = await register(username.trim(), email.trim(), password);
+        if (newUser) navigate("/user/profile", { replace: true });
+      } catch { /* Ошибку показывает authStore. */ }
+      return;
+    }
+    if (!identifier.trim() || !password) return setFormError("Введите имя или почту и пароль.");
+    if (mode === "admin") {
+      await adminLogin(identifier.trim(), password);
+      return;
+    }
+    try {
+      const signedInUser = await login(identifier.trim(), password);
+      if (signedInUser) navigate("/user/profile", { replace: true });
+    } catch { /* Ошибку показывает authStore. */ }
+  };
+
+  const busy = loading || adminLoading;
+  const visibleError = formError || (mode === "admin" ? adminError : error);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-8 h-8 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                  />
-                </svg>
-              </div>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-              Welcome Back
-            </h1>
-            <p className="text-gray-600">
-              Sign in to continue your learning journey
-            </p>
+    <div className="auth-page">
+      <div className="auth-shell">
+        <section className="auth-intro" aria-label="О платформе">
+          <div className="auth-brand-badge"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></div>
+          <div className="auth-intro-copy">
+            <span className="eyebrow">Платформа для обучения</span>
+            <h1>Учитесь.<br />Проверяйте знания.<br /><span>Видите прогресс.</span></h1>
+            <p>Тренируйтесь в своём темпе, проходите тесты преподавателя и смотрите результаты в одном месте.</p>
           </div>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Username or Email
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={identifier}
-                  onChange={(e) => {
-                    setIdentifier(e.target.value);
-                    if (error) clearError();
-                  }}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Enter username or email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pl-10"
-                  disabled={loading}
-                />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (error) clearError();
-                  }}
-                  onKeyPress={handleKeyPress}
-                  placeholder="••••••••"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all pl-10"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
-                >
-                  {showPassword ? (
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 3l18 18M10.58 10.58a2 2 0 002.83 2.83M9.88 5.09A9.53 9.53 0 0112 5c5 0 9 4.5 9 7 0 1.23-.7 2.7-1.88 4.03M6.11 6.11C3.82 7.64 2 10.02 2 12c0 2.5 4 7 10 7 1.05 0 2.06-.14 3-.4"
-                      />
-                    </svg>
-                  ) : (
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"
-                      />
-                      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth={2} />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                <div className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-red-500 mr-3"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-sm text-red-700">{error}</span>
-                </div>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white py-3 px-4 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center"
-            >
-              {loading ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Signing in...
-                </>
-              ) : (
-                "Sign In"
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
-              <Link
-                to="/auth/register"
-                className="text-blue-600 hover:underline transition-colors"
-              >
-                Sign up
-              </Link>
-            </p>
+          <div className="auth-steps" aria-label="Как это работает">
+            <span><b>01</b> Создайте аккаунт или войдите</span>
+            <span><b>02</b> Выберите тренировку или введите код</span>
+            <span><b>03</b> Следите за результатами</span>
           </div>
-        </div>
+        </section>
+        <main className="auth-main">
+          <div className="auth-card">
+            <div className="auth-mobile-brand"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></div>
+            <div className="auth-card-top"><img className="auth-seal" src="/okurmen-seal.svg" alt="" /><span className="auth-secure"><ShieldCheck size={15} /> Ваше пространство для учёбы</span></div>
+            <h2>{mode === "register" ? "Создать аккаунт" : mode === "admin" ? "Вход администратора" : "С возвращением"}</h2>
+            <p className="auth-subtitle">{mode === "register" ? "Займёт меньше минуты. После регистрации вы сразу попадёте в кабинет." : mode === "admin" ? "Введите имя администратора и код доступа." : "Войдите, чтобы продолжить обучение."}</p>
+            {mode !== "admin" && <div className="auth-tabs" role="tablist" aria-label="Вход или регистрация">
+              <button type="button" role="tab" aria-selected={mode === "login"} className={mode === "login" ? "active" : ""} onClick={() => changeMode("login")}>Вход</button>
+              <button type="button" role="tab" aria-selected={mode === "register"} className={mode === "register" ? "active" : ""} onClick={() => changeMode("register")}>Регистрация</button>
+            </div>}
+            <form onSubmit={handleSubmit} className="auth-form" noValidate>
+              {mode === "register" ? <>
+                <label htmlFor="auth-name">Ваше имя</label>
+                <input id="auth-name" autoComplete="name" value={username} onChange={(e) => { setUsername(e.target.value); setFormError(""); clearError(); }} placeholder="Как к вам обращаться" disabled={busy} required />
+                <label htmlFor="auth-email">Электронная почта</label>
+                <input id="auth-email" type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setFormError(""); clearError(); }} placeholder="name@example.com" disabled={busy} required />
+              </> : <>
+                <label htmlFor="auth-identifier">{mode === "admin" ? "Имя администратора" : "Имя или электронная почта"}</label>
+                <input id="auth-identifier" autoComplete="username" value={identifier} onChange={(e) => { setIdentifier(e.target.value); setFormError(""); if (mode === "admin") clearAdminError(); else clearError(); }} placeholder={mode === "admin" ? "Имя администратора" : "Имя или name@example.com"} disabled={busy} required />
+              </>}
+              <label htmlFor="auth-password">{mode === "admin" ? "Код доступа" : "Пароль"}</label>
+              <div className="password-field"><input id="auth-password" type={showPassword ? "text" : "password"} autoComplete={mode === "register" ? "new-password" : "current-password"} value={password} onChange={(e) => { setPassword(e.target.value); setFormError(""); if (mode === "admin") clearAdminError(); else clearError(); }} placeholder={mode === "admin" ? "Введите код" : "Минимум 6 символов"} disabled={busy} required /><button type="button" aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div>
+              {mode === "register" && <p className="field-hint">Используйте пароль длиной от 6 символов.</p>}
+              {visibleError && <p className="form-error" role="alert">{visibleError}</p>}
+              <button className="primary-button auth-submit" type="submit" disabled={busy}>{busy ? "Подождите..." : mode === "register" ? "Создать аккаунт" : "Войти"}<ArrowRight size={19} /></button>
+            </form>
+            <div className="auth-bottom">{mode === "admin" ? <button type="button" onClick={() => changeMode("login")}>Вернуться ко входу</button> : <><span>{mode === "register" ? "Уже есть аккаунт?" : "Нет аккаунта?"}</span><button type="button" onClick={() => changeMode(mode === "register" ? "login" : "register")}>{mode === "register" ? "Войти" : "Зарегистрироваться"}</button></>}</div>
+            {mode !== "admin" && <div className="auth-admin"><button type="button" onClick={() => changeMode("admin")}>Вход для администратора</button></div>}
+          </div>
+          <p className="auth-footer">Окурмэн · Учиться удобнее, когда всё понятно</p>
+        </main>
       </div>
     </div>
   );
-};
-
-export default Login;
-
-
+}
