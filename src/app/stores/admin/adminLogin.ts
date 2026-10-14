@@ -6,7 +6,7 @@ interface AdminLoginState {
         loading: boolean;
         error: string | null;
         admin: any;
-        login: (name: string, code: string) => Promise<void>;
+        login: (email: string, password: string) => Promise<void>;
         clearError: () => void;
         logout: () => void;
     }
@@ -16,10 +16,10 @@ interface AdminLoginState {
         error: null,
         admin: null,
         clearError: () => set({ error: null }),
-        login: async (name: string, code: string) => {
+        login: async (email: string, password: string) => {
             try {
                 set({ loading: true, error: null });
-                const response = await axiosAdmin.post('/admin/login', { name, code });
+                const response = await axiosAdmin.post('/admin/login', { email, password });
                 const admin = response.data;
                 Cookies.set('adminToken', admin.token);
                 set({ admin });
@@ -34,4 +34,3 @@ interface AdminLoginState {
             set({ admin: null });
         }
     }));
-

@@ -99,7 +99,7 @@ export default function Login() {
             <div className="auth-mobile-brand"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></div>
             <div className="auth-card-top"><img className="auth-seal" src="/okurmen-seal.svg" alt="" /><span className="auth-secure"><ShieldCheck size={15} /> Ваше пространство для учёбы</span></div>
             <h2>{mode === "register" ? "Создать аккаунт" : mode === "admin" ? "Вход администратора" : "С возвращением"}</h2>
-            <p className="auth-subtitle">{mode === "register" ? "Займёт меньше минуты. После регистрации вы сразу попадёте в кабинет." : mode === "admin" ? "Введите имя администратора и код доступа." : "Войдите, чтобы продолжить обучение."}</p>
+            <p className="auth-subtitle">{mode === "register" ? "Займёт меньше минуты. После регистрации вы сразу попадёте в кабинет." : mode === "admin" ? "Введите email администратора и пароль." : "Войдите, чтобы продолжить обучение."}</p>
             {mode !== "admin" && <div className="auth-tabs" role="tablist" aria-label="Вход или регистрация">
               <button type="button" role="tab" aria-selected={mode === "login"} className={mode === "login" ? "active" : ""} onClick={() => changeMode("login")}>Вход</button>
               <button type="button" role="tab" aria-selected={mode === "register"} className={mode === "register" ? "active" : ""} onClick={() => changeMode("register")}>Регистрация</button>
@@ -111,11 +111,11 @@ export default function Login() {
                 <label htmlFor="auth-email">Электронная почта</label>
                 <input id="auth-email" type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setFormError(""); clearError(); }} placeholder="name@example.com" disabled={busy} required />
               </> : <>
-                <label htmlFor="auth-identifier">{mode === "admin" ? "Имя администратора" : "Имя или электронная почта"}</label>
-                <input id="auth-identifier" autoComplete="username" value={identifier} onChange={(e) => { setIdentifier(e.target.value); setFormError(""); if (mode === "admin") clearAdminError(); else clearError(); }} placeholder={mode === "admin" ? "Имя администратора" : "Имя или name@example.com"} disabled={busy} required />
+                <label htmlFor="auth-identifier">{mode === "admin" ? "Email администратора" : "Имя или электронная почта"}</label>
+                <input id="auth-identifier" type={mode === "admin" ? "email" : "text"} autoComplete={mode === "admin" ? "email" : "username"} value={identifier} onChange={(e) => { setIdentifier(e.target.value); setFormError(""); if (mode === "admin") clearAdminError(); else clearError(); }} placeholder={mode === "admin" ? "admin@example.com" : "Имя или name@example.com"} disabled={busy} required />
               </>}
-              <label htmlFor="auth-password">{mode === "admin" ? "Код доступа" : "Пароль"}</label>
-              <div className="password-field"><input id="auth-password" type={showPassword ? "text" : "password"} autoComplete={mode === "register" ? "new-password" : "current-password"} value={password} onChange={(e) => { setPassword(e.target.value); setFormError(""); if (mode === "admin") clearAdminError(); else clearError(); }} placeholder={mode === "admin" ? "Введите код" : "Минимум 6 символов"} disabled={busy} required /><button type="button" aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div>
+              <label htmlFor="auth-password">Пароль</label>
+              <div className="password-field"><input id="auth-password" type={showPassword ? "text" : "password"} autoComplete={mode === "register" ? "new-password" : "current-password"} value={password} onChange={(e) => { setPassword(e.target.value); setFormError(""); if (mode === "admin") clearAdminError(); else clearError(); }} placeholder={mode === "admin" ? "Введите пароль" : "Минимум 6 символов"} disabled={busy} required /><button type="button" aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div>
               {mode === "register" && <p className="field-hint">Используйте пароль длиной от 6 символов.</p>}
               {visibleError && <p className="form-error" role="alert">{visibleError}</p>}
               <button className="primary-button auth-submit" type="submit" disabled={busy}>{busy ? "Подождите..." : mode === "register" ? "Создать аккаунт" : "Войти"}<ArrowRight size={19} /></button>
