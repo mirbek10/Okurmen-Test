@@ -248,7 +248,7 @@ export const StudentTestPage = () => {
           "Ваш результат успешно отправлен! Спасибо за прохождение теста."
         );
         localStorage.removeItem("code");
-        window.location.href = "/";
+        window.location.href = categoryId === "\u0420\u041e\u041f" ? "/rop-code" : "/";
       } catch (err) {
         console.error("Ошибка при отправке ответов:", err);
         setError("Ошибка при отправке результатов. Попробуйте еще раз.");

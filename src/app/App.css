@@ -121,6 +121,9 @@ button:disabled { cursor: not-allowed; opacity: .65; }
 .field-hint { margin: 5px 0 0; color: #88958b; font-size: 12px; }
 .auth-submit { width: 100%; margin-top: 24px; }
 .auth-bottom { display: flex; justify-content: center; gap: 6px; margin-top: 23px; color: #77847b; font-size: 13px; }
+.auth-code-entry { margin-top: 17px; text-align: center; font-size: 13px; }
+.auth-code-entry a { color: #286a49; font-weight: 700; text-decoration: none; }
+.auth-code-entry a:hover { text-decoration: underline; }
 .auth-bottom button, .auth-admin button { padding: 0; border: 0; background: transparent; color: #286a48; font-weight: 700; }
 .auth-bottom button:hover, .auth-admin button:hover { text-decoration: underline; }
 .auth-admin { margin-top: 27px; padding-top: 21px; text-align: center; border-top: 1px solid #edf1eb; }

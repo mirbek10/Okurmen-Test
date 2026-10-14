@@ -25,12 +25,16 @@ const QuestionsPage = lazy(() => import("@/pages/admin/question/Qestion").then((
 const TeachersPage = lazy(() => import("@/pages/admin/teachers/Teachers").then((m) => ({ default: m.TeachersPage })));
 const TeachersLeaderboardPage = lazy(() => import("@/pages/admin/teachers/TeachersLeaderboardPage").then((m) => ({ default: m.TeachersLeaderboardPage })));
 const AddQuestion = lazy(() => import("@/pages/admin/add-question/AddQuestion").then((m) => ({ default: m.AddQuestion })));
+const ROP_CATEGORY = "\u0420\u041e\u041f";
 
 export const router = createBrowserRouter([
   { element: <UserLayout />, children: [
     { path: "/", element: <Login /> },
     { path: "/auth/login", element: <Login /> },
     { path: "/auth/register", element: <Login /> },
+    { path: "/rop-code", element: <JoinTest requiredCategory={ROP_CATEGORY} /> },
+    { path: "/rop-waiting", element: <WaitingList entryPath="/rop-code" /> },
+    { path: "/rop-student-test/:id", element: <StudentTestPage /> },
   ] },
   { element: <ProtectedRoute />, children: [
     { path: "/join-test", element: <JoinTest /> },

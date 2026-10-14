@@ -12,7 +12,7 @@ function readCredentials() {
   } catch { return null; }
 }
 
-export function WaitingList() {
+export function WaitingList({ entryPath = "/join-test" } = {}) {
   const navigate = useNavigate();
   const { user: account } = useAuthStore();
   const { error, user, getStatus } = useUserGetStatus();
@@ -23,31 +23,34 @@ export function WaitingList() {
 
   useEffect(() => {
     if (!studentId || !code) {
-      navigate("/join-test", { replace: true });
+      navigate(entryPath, { replace: true });
       return;
     }
     getStatus(studentId, code);
     const intervalId = setInterval(() => getStatus(studentId, code), 5000);
     return () => clearInterval(intervalId);
-  }, [studentId, code, getStatus, navigate]);
+  }, [studentId, code, getStatus, navigate, entryPath]);
 
   useEffect(() => {
-    if (started && user?.category) navigate(`/student-test/${user.category}`, { replace: true });
-  }, [started, user?.category, navigate]);
+    if (started && user?.category) {
+      const route = entryPath === "/rop-code" ? "/rop-student-test" : "/student-test";
+      navigate(`${route}/${user.category}`, { replace: true });
+    }
+  }, [started, user?.category, navigate, entryPath]);
 
   useEffect(() => {
     if (error?.includes("404") || error?.toLowerCase().includes("не найден")) {
       localStorage.removeItem("user");
       localStorage.removeItem("code");
-      navigate("/join-test", { replace: true });
+      navigate(entryPath, { replace: true });
     }
-  }, [error, navigate]);
+  }, [error, navigate, entryPath]);
 
   const leave = () => {
     localStorage.removeItem("user");
     localStorage.removeItem("code");
-    navigate("/user/profile", { replace: true });
+    navigate(entryPath, { replace: true });
   };
 
-  return <div className="waiting-page"><div className="waiting-wrap"><Link className="text-link" to="/user/profile"><ArrowLeft size={17} /> В кабинет</Link><div className="waiting-card"><span className="section-kicker">Тест преподавателя</span><span className="waiting-icon">{started ? <CheckCircle2 size={27} /> : <Clock3 size={27} />}</span><h1>{started ? "Тест начался" : "Вы подключены"}</h1><p>{started ? "Открываем вопросы..." : "Преподаватель запустит тест. Страница обновит статус автоматически."}</p><div className="waiting-details"><div><small>Участник</small><strong>{user?.student?.name || account?.username || account?.name || "Ученик"}</strong></div><div><small>Код теста</small><strong>{credentials?.code || "—"}</strong></div></div>{error && <p className="form-error" role="alert">Не удалось обновить статус: {error}</p>}<div className="waiting-status"><span className="waiting-dot" /> {started ? "Подготовка вопросов" : "Ожидаем преподавателя"}</div><button type="button" className="waiting-leave" onClick={leave}>Покинуть ожидание</button></div></div></div>;
+  return <div className="waiting-page"><div className="waiting-wrap"><Link className="text-link" to={entryPath === "/rop-code" ? "/" : "/user/profile"}><ArrowLeft size={17} /> В кабинет</Link><div className="waiting-card"><span className="section-kicker">Тест преподавателя</span><span className="waiting-icon">{started ? <CheckCircle2 size={27} /> : <Clock3 size={27} />}</span><h1>{started ? "Тест начался" : "Вы подключены"}</h1><p>{started ? "Открываем вопросы..." : "Преподаватель запустит тест. Страница обновит статус автоматически."}</p><div className="waiting-details"><div><small>Участник</small><strong>{user?.student?.name || account?.username || account?.name || "Ученик"}</strong></div><div><small>Код теста</small><strong>{credentials?.code || "—"}</strong></div></div>{error && <p className="form-error" role="alert">Не удалось обновить статус: {error}</p>}<div className="waiting-status"><span className="waiting-dot" /> {started ? "Подготовка вопросов" : "Ожидаем преподавателя"}</div><button type="button" className="waiting-leave" onClick={leave}>Покинуть ожидание</button></div></div></div>;
 }

@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowRight, KeyRound } from "lucide-react";
 import { useAuthStore } from "@/app/stores/auth/authStore";
 import { useUserJoinStore } from "@/app/stores/user/userJoin";
 
-export default function JoinTest() {
+export default function JoinTest({ requiredCategory } = {}) {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { join, loading, error, clearError } = useUserJoinStore();
@@ -16,20 +16,20 @@ export default function JoinTest() {
     setLocalError("");
     if (code.trim().length < 4) return setLocalError("Введите код теста из 4 или более цифр.");
     try {
-      const joinedUser = await join(user?.username || user?.name || "Ученик", code.trim(), user?.email || "");
+      const joinedUser = await join(user?.username || user?.name || "", code.trim(), user?.email || "", requiredCategory);
       localStorage.setItem("user", JSON.stringify(joinedUser));
       localStorage.setItem("code", code.trim());
-      navigate("/student-waiting-list");
+      navigate(requiredCategory ? "/rop-waiting" : "/student-waiting-list");
     } catch { /* Ошибку показывает store. */ }
   };
 
   return <div className="join-page">
-    <Link to="/user/profile" className="text-link"><ArrowLeft size={17} /> Назад в кабинет</Link>
+    <Link to={requiredCategory ? "/" : "/user/profile"} className="text-link"><ArrowLeft size={17} /> {requiredCategory ? "На главную" : "Назад в кабинет"}</Link>
     <div className="join-card">
       <span className="section-kicker">Тест преподавателя</span>
       <span className="join-icon"><KeyRound size={26} /></span>
       <h1>Войти по коду</h1>
-      <p>Введите код, который дал преподаватель. Ваше имя и почта уже взяты из аккаунта.</p>
+      <p>{requiredCategory ? "Введите код теста РОП. Регистрация не нужна." : "Введите код, который дал преподаватель. Ваше имя и почта уже взяты из аккаунта."}</p>
       <form onSubmit={handleSubmit} className="auth-form">
         <label htmlFor="test-code">Код теста</label>
         <input id="test-code" inputMode="numeric" pattern="[0-9]*" autoComplete="off" value={code} onChange={(event) => { setCode(event.target.value.replace(/\D/g, "")); setLocalError(""); clearError(); }} placeholder="Введите код" disabled={loading} required />

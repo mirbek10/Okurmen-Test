@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import Cookies from "js-cookie";
 import { useAuthStore } from "@/app/stores/auth/authStore";
@@ -121,6 +121,7 @@ export default function Login() {
               <button className="primary-button auth-submit" type="submit" disabled={busy}>{busy ? "Подождите..." : mode === "register" ? "Создать аккаунт" : "Войти"}<ArrowRight size={19} /></button>
             </form>
             <div className="auth-bottom">{mode === "admin" ? <button type="button" onClick={() => changeMode("login")}>Вернуться ко входу</button> : <><span>{mode === "register" ? "Уже есть аккаунт?" : "Нет аккаунта?"}</span><button type="button" onClick={() => changeMode(mode === "register" ? "login" : "register")}>{mode === "register" ? "Войти" : "Зарегистрироваться"}</button></>}</div>
+            {mode !== "admin" && <div className="auth-code-entry"><Link to="/rop-code">Пройти тест РОП по коду без регистрации</Link></div>}
             {mode !== "admin" && <div className="auth-admin"><button type="button" onClick={() => changeMode("admin")}>Вход для администратора</button></div>}
           </div>
           <p className="auth-footer">Окурмэн · Учиться удобнее, когда всё понятно</p>
