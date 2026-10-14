@@ -343,6 +343,7 @@ export const StudentTestPage = () => {
   };
 
   const handleNext = () => {
+    if (isRopTest) return;
     if (currentQuestionIndex < testQuestions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -350,6 +351,7 @@ export const StudentTestPage = () => {
   };
 
   const handlePrev = () => {
+    if (isRopTest) return;
     if (currentQuestionIndex > 0) {
       setCurrentQuestionIndex(prev => prev - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -357,6 +359,7 @@ export const StudentTestPage = () => {
   };
 
   const goToQuestion = (index) => {
+    if (isRopTest) return;
     setCurrentQuestionIndex(index);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -572,37 +575,43 @@ export const StudentTestPage = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <button
-              onClick={handlePrev}
-              disabled={currentQuestionIndex === 0}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              <ChevronLeft size={20} />
-              Назад
-            </button>
+          {isRopTest ? (
+            <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-center text-sm font-medium text-blue-800">
+              Сосредоточьтесь на этом вопросе. Следующий откроется автоматически, когда закончится время.
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <button
+                  onClick={handlePrev}
+                  disabled={currentQuestionIndex === 0}
+                  className="flex items-center gap-2 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                >
+                  <ChevronLeft size={20} />
+                  Назад
+                </button>
 
-            {!isLastQuestion ? (
-              <button
-                onClick={handleNext}
-                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-              >
-                Следующий
-                <ChevronRight size={20} />
-              </button>
-            ) : (
-              <button
-                onClick={handleManualSubmit}
-                disabled={isSubmitting}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                Завершить тест
-                <CheckCircle size={20} />
-              </button>
-            )}
-          </div>
+                {!isLastQuestion ? (
+                  <button
+                    onClick={handleNext}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  >
+                    Следующий
+                    <ChevronRight size={20} />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleManualSubmit}
+                    disabled={isSubmitting}
+                    className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
+                  >
+                    Завершить тест
+                    <CheckCircle size={20} />
+                  </button>
+                )}
+              </div>
 
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+              <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
             <h3 className="font-semibold text-gray-800 mb-4">
               Навигация по вопросам:
             </h3>
@@ -628,7 +637,9 @@ export const StudentTestPage = () => {
                 );
               })}
             </div>
-          </div>
+              </div>
+            </>
+          )}
 
           <div className="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
             <h3 className="font-semibold text-gray-800 mb-2">
