@@ -372,15 +372,12 @@ export default function TestMonitorPage() {
                   <h1 className="text-3xl font-bold text-gray-800">
                     {test.category}
                   </h1>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
-                    {test.group}
-                  </span>
+                  {test.group && <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">{test.group}</span>}
                 </div>
 
                 <div className="space-y-1">
                   <p className="text-gray-600 flex items-center gap-2">
-                    <span className="font-medium">Преподаватель:</span>{" "}
-                    {test.teacher}
+                    {test.teacher && <><span className="font-medium">Преподаватель:</span> {test.teacher}</>}
                   </p>
                   <p className="text-sm text-gray-500">
                     Код теста:{" "}
@@ -391,19 +388,11 @@ export default function TestMonitorPage() {
                   {ropShareLink && <button type="button" onClick={copyRopLink} className="mt-2 inline-flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"><Copy size={16} /> Скопировать ссылку для ученика</button>}
                 </div>
               </div>
-              {timerStarted && (
+              {timerStarted && test.category !== "\u0420\u041e\u041f" && (
                 <div className="text-right">
                   <p className="text-sm text-gray-600 mb-1">Осталось времени</p>
-                  <p
-                    className={`text-4xl font-bold font-mono ${
-                      timeRemaining < 60
-                        ? "text-red-600 animate-pulse"
-                        : timeRemaining < 300
-                        ? "text-orange-600"
-                        : "text-blue-600"
-                    }`}
-                  >
-                    {formatTime(timeRemaining)}
+                  <p className={`text-4xl font-bold font-mono ${timeRemaining < 60 ? "text-red-600 animate-pulse" : timeRemaining < 300 ? "text-orange-600" : "text-blue-600"}`}>
+                    {`${String(Math.floor(timeRemaining / 60)).padStart(2, "0")}:${String(timeRemaining % 60).padStart(2, "0")}`}
                   </p>
                 </div>
               )}

@@ -145,6 +145,9 @@ export function Dashboard() {
 
   const handleSelectTest = (test) => {
     setSelectedTest(test);
+    setDuration(test.category === "\u0420\u041e\u041f" ? 30 : 60);
+    setGroup("");
+    setTeacherId("");
     setShowSettingsModal(true);
     setError("");
   };
@@ -152,7 +155,8 @@ export function Dashboard() {
   const handleStartTest = async () => {
     if (!selectedTest) return;
     const selectedTeacher = teachers.find((item) => item.userId === teacherId || item._id === teacherId);
-    if (!group.trim() || !teacherId || !selectedTeacher) {
+    const isRopTest = selectedTest.category === "\u0420\u041e\u041f";
+    if (!isRopTest && (!group.trim() || !teacherId || !selectedTeacher)) {
       setError("Заполните обязательные поля");
       return;
     }
@@ -162,8 +166,8 @@ export function Dashboard() {
       await start({
         category: selectedTest.category,
         group: group.trim(),
-        teacher: selectedTeacher.name,
-        teacherId: selectedTeacher.userId || selectedTeacher._id,
+        teacher: selectedTeacher?.name || "",
+        teacherId: selectedTeacher ? selectedTeacher.userId || selectedTeacher._id : null,
         maxStudents: parseInt(maxStudents),
         testDuration: parseInt(duration),
         testName: selectedTest.name,
@@ -371,7 +375,7 @@ export function Dashboard() {
               </div>
 
               <div className="space-y-6 mb-10">
-                <div className="grid grid-cols-2 gap-4">
+                {selectedTest?.category !== "\u0420\u041e\u041f" && <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-400 flex items-center gap-2">
                       <Users className="w-3 h-3" /> ГРУППА
@@ -411,7 +415,7 @@ export function Dashboard() {
                       </p>
                     )}
                   </div>
-                </div>
+                </div>}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -427,14 +431,16 @@ export function Dashboard() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-400 flex items-center gap-2">
-                      <Timer className="w-3 h-3" /> МИНУТЫ
+                      <Timer className="w-3 h-3" /> {selectedTest?.category === "\u0420\u041e\u041f" ? "ОБЩЕЕ ВРЕМЯ, МИНУТЫ" : "МИНУТЫ"}
                     </label>
                     <input
                       type="number"
+                      min="1"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
                       className="w-full bg-slate-50 rounded-2xl px-5 py-3.5 outline-none font-bold"
                     />
+                    {selectedTest?.category === "\u0420\u041e\u041f" && <p className="text-xs font-medium text-slate-500">Время на вопрос: {Math.floor(((Number(duration) * 60) / Math.max(1, selectedTest.questionsCount)) / 60)} мин {Math.round(((Number(duration) * 60) / Math.max(1, selectedTest.questionsCount)) % 60)} сек</p>}
                   </div>
                 </div>
               </div>

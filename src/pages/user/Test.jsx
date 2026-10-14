@@ -35,7 +35,7 @@ export const StudentTestPage = () => {
   const { id: categoryId } = useParams();
 
   const { postAnswe, forcePostAnswere } = useSetAnswere();
-  const { status, getStatus } = useTestStatus();
+  const { status, testDuration, startedAt, getStatus } = useTestStatus();
   const {
     questions,
     fetchQuestions,
@@ -52,7 +52,12 @@ export const StudentTestPage = () => {
   const [studentData, setStudentData] = useState(null);
   const [testSessionId, setTestSessionId] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(60);
+  const [totalSecondsLeft, setTotalSecondsLeft] = useState(null);
   const [testResult, setTestResult] = useState(null);
+  const submissionStartedRef = useRef(false);
+  const secondsPerQuestion = testDuration && testQuestions.length
+    ? (testDuration * 60) / testQuestions.length
+    : 60;
   const isRopTest = categoryId === "\u0420\u041e\u041f";
 
   const code = useMemo(() => {
@@ -195,8 +200,9 @@ export const StudentTestPage = () => {
 
   const submitTest = useCallback(
     async (finalAnswers, isAuto) => {
-      if (isSubmitting || !testQuestions.length) return;
+      if (isSubmitting || submissionStartedRef.current || !testQuestions.length) return;
 
+      submissionStartedRef.current = true;
       setIsSubmitting(true);
 
       const formattedAnswers = testQuestions.map((question, index) => {
@@ -256,6 +262,7 @@ export const StudentTestPage = () => {
         console.error("Ошибка при отправке ответов:", err);
         setError("Ошибка при отправке результатов. Попробуйте еще раз.");
         setIsSubmitting(false);
+        submissionStartedRef.current = false;
       }
     },
     [
@@ -288,15 +295,16 @@ export const StudentTestPage = () => {
   }, [code, getStatus, isSubmitting]);
 
   useEffect(() => {
-    if (status === "finished" && !isSubmitting) {
+    if (status === "finished" && !isSubmitting && !submissionStartedRef.current) {
       console.log("Тест завершен удаленно. Авто-отправка ответов...");
       submitTest(selectedAnswers, "auto");
     }
   }, [status, selectedAnswers, submitTest, isSubmitting]);
 
   useEffect(() => {
-    if (!isRopTest || !testQuestions.length || testResult || isSubmitting) return undefined;
-    setSecondsLeft(60);
+    if (!isRopTest || status !== "started" || !testDuration || !testQuestions.length || testResult || isSubmitting) return undefined;
+    const totalSeconds = Math.max(1, Math.round(testDuration * 60));
+    setSecondsLeft(Math.max(1, Math.ceil(totalSeconds / testQuestions.length)));
     const timer = setInterval(() => {
       setSecondsLeft((seconds) => {
         if (seconds > 1) return seconds - 1;
@@ -311,7 +319,20 @@ export const StudentTestPage = () => {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [isRopTest, currentQuestionIndex, testQuestions.length, testResult, isSubmitting]);
+  }, [isRopTest, status, testDuration, currentQuestionIndex, testQuestions.length, testResult, isSubmitting]);
+
+  useEffect(() => {
+    if (!isRopTest || status !== "started" || !testDuration || !startedAt || testResult || isSubmitting) return undefined;
+    const endAt = startedAt + testDuration * 60 * 1000;
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+      setTotalSecondsLeft(remaining);
+      if (remaining === 0) submitTestRef.current(selectedAnswersRef.current, "auto");
+    };
+    updateRemaining();
+    const timer = setInterval(updateRemaining, 1000);
+    return () => clearInterval(timer);
+  }, [isRopTest, status, testDuration, startedAt, testResult, isSubmitting]);
 
   const handleAnswerChange = (questionId, optionIndex) => {
     setSelectedAnswers(prev => {
@@ -479,7 +500,7 @@ export const StudentTestPage = () => {
                 {testQuestions.length}
               </span>
             </div>
-            {isRopTest && <div className={`mt-3 inline-flex rounded-lg px-3 py-2 font-mono font-bold ${secondsLeft <= 10 ? "bg-red-100 text-red-700" : "bg-amber-50 text-amber-800"}`} aria-live="polite">На этот вопрос: {String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:{String(secondsLeft % 60).padStart(2, "0")}</div>}
+            {isRopTest && status === "started" && <div className="mt-3 flex flex-wrap gap-3 text-sm font-semibold"><span className={`rounded-lg px-3 py-2 font-mono ${totalSecondsLeft !== null && totalSecondsLeft <= 60 ? "bg-red-100 text-red-700" : "bg-blue-50 text-blue-800"}`} aria-live="polite">Общее время: {totalSecondsLeft === null ? "--:--" : `${String(Math.floor(totalSecondsLeft / 60)).padStart(2, "0")}:${String(totalSecondsLeft % 60).padStart(2, "0")}`}</span><span className={`rounded-lg px-3 py-2 font-mono ${secondsLeft <= 10 ? "bg-red-100 text-red-700" : "bg-amber-50 text-amber-800"}`}>На вопрос: {String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:{String(secondsLeft % 60).padStart(2, "0")} ({Math.floor(secondsPerQuestion / 60)} мин {Math.round(secondsPerQuestion % 60)} сек)</span></div>}
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6 border-2 border-gray-200 mb-6">
