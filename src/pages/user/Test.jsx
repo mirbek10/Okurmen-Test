@@ -128,10 +128,11 @@ export const StudentTestPage = () => {
 
       let selectedQuestions;
       let sessionId;
+      const maxQuestions = Math.min(isRopTest ? 30 : 20, filteredQuestions.length);
 
       if (
-        !isRopTest &&
         savedSessionData?.questions &&
+        savedSessionData.questions.length === maxQuestions &&
         savedSessionData?.studentId === studentData?.studentId
       ) {
         sessionId = savedSessionId;
@@ -144,7 +145,6 @@ export const StudentTestPage = () => {
           setCurrentQuestionIndex(savedSessionData.currentIndex);
         }
       } else {
-        const maxQuestions = Math.min(isRopTest ? 30 : 20, filteredQuestions.length);
         const shuffled = shuffleArray(filteredQuestions);
         selectedQuestions = shuffled.slice(0, maxQuestions);
 
@@ -397,6 +397,16 @@ export const StudentTestPage = () => {
   const currentAnswer = questionId ? selectedAnswers[questionId] : undefined;
   const isLastQuestion = currentQuestionIndex === testQuestions.length - 1;
 
+  const handleRopContinue = () => {
+    if (!isRopTest || currentAnswer === undefined) return;
+    if (isLastQuestion) {
+      submitTest(selectedAnswers);
+      return;
+    }
+    setCurrentQuestionIndex((index) => index + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const getCategoryName = () => {
     if (!categoryId) return "Тест";
     if (categoryId === "mixed") return "Смешанный тест";
@@ -577,7 +587,10 @@ export const StudentTestPage = () => {
 
           {isRopTest ? (
             <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-center text-sm font-medium text-blue-800">
-              Сосредоточьтесь на этом вопросе. Следующий откроется автоматически, когда закончится время.
+              {currentAnswer === undefined
+                ? "Сосредоточьтесь на этом вопросе. После ответа можно перейти дальше; если время закончится, вопрос сменится автоматически."
+                : "Ответ сохранён. Можно перейти к следующему вопросу."}
+              {currentAnswer !== undefined && <button type="button" onClick={handleRopContinue} disabled={isSubmitting} className="mx-auto mt-3 flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{isLastQuestion ? "Завершить тест" : "Следующий вопрос"}<ChevronRight size={18} /></button>}
             </div>
           ) : (
             <>

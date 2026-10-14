@@ -146,6 +146,7 @@ export function Dashboard() {
   const handleSelectTest = (test) => {
     setSelectedTest(test);
     setDuration(test.category === "\u0420\u041e\u041f" ? 30 : 60);
+    setMaxStudents(test.category === "\u0420\u041e\u041f" ? 1 : 30);
     setGroup("");
     setTeacherId("");
     setShowSettingsModal(true);
