@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   CheckCircle,
@@ -51,6 +51,9 @@ export const StudentTestPage = () => {
   const [error, setError] = useState(null);
   const [studentData, setStudentData] = useState(null);
   const [testSessionId, setTestSessionId] = useState(null);
+  const [secondsLeft, setSecondsLeft] = useState(60);
+  const [testResult, setTestResult] = useState(null);
+  const isRopTest = categoryId === "\u0420\u041e\u041f";
 
   const code = useMemo(() => {
     try {
@@ -122,6 +125,7 @@ export const StudentTestPage = () => {
       let sessionId;
 
       if (
+        !isRopTest &&
         savedSessionData?.questions &&
         savedSessionData?.studentId === studentData?.studentId
       ) {
@@ -135,7 +139,7 @@ export const StudentTestPage = () => {
           setCurrentQuestionIndex(savedSessionData.currentIndex);
         }
       } else {
-        const maxQuestions = Math.min(20, filteredQuestions.length);
+        const maxQuestions = Math.min(isRopTest ? 30 : 20, filteredQuestions.length);
         const shuffled = shuffleArray(filteredQuestions);
         selectedQuestions = shuffled.slice(0, maxQuestions);
 
@@ -165,7 +169,7 @@ export const StudentTestPage = () => {
       console.error("Ошибка формирования теста:", err);
       setError("Ошибка при создании теста");
     }
-  }, [questions, questionsLoading, categoryId, studentData]);
+  }, [questions, questionsLoading, categoryId, studentData, isRopTest]);
 
   useEffect(() => {
     if (!testSessionId || !testQuestions.length) return;
@@ -244,11 +248,10 @@ export const StudentTestPage = () => {
           localStorage.removeItem(testSessionId);
         }
 
-        toast.success(
-          "Ваш результат успешно отправлен! Спасибо за прохождение теста."
-        );
+        setTestResult({ correct: formattedAnswers.filter((answer) => answer.isCorrect).length, total: formattedAnswers.length, name: studentData?.name || "Ученик" });
+        toast.success("Результат сохранён");
         localStorage.removeItem("code");
-        window.location.href = categoryId === "\u0420\u041e\u041f" ? "/rop-code" : "/";
+        setIsSubmitting(false);
       } catch (err) {
         console.error("Ошибка при отправке ответов:", err);
         setError("Ошибка при отправке результатов. Попробуйте еще раз.");
@@ -267,6 +270,10 @@ export const StudentTestPage = () => {
       isSubmitting,
     ]
   );
+  const selectedAnswersRef = useRef(selectedAnswers);
+  const submitTestRef = useRef(submitTest);
+  selectedAnswersRef.current = selectedAnswers;
+  submitTestRef.current = submitTest;
 
   useEffect(() => {
     if (!code || isSubmitting) return;
@@ -286,6 +293,25 @@ export const StudentTestPage = () => {
       submitTest(selectedAnswers, "auto");
     }
   }, [status, selectedAnswers, submitTest, isSubmitting]);
+
+  useEffect(() => {
+    if (!isRopTest || !testQuestions.length || testResult || isSubmitting) return undefined;
+    setSecondsLeft(60);
+    const timer = setInterval(() => {
+      setSecondsLeft((seconds) => {
+        if (seconds > 1) return seconds - 1;
+        clearInterval(timer);
+        if (currentQuestionIndex < testQuestions.length - 1) {
+          setCurrentQuestionIndex((index) => index + 1);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          submitTestRef.current(selectedAnswersRef.current, "auto");
+        }
+        return 0;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isRopTest, currentQuestionIndex, testQuestions.length, testResult, isSubmitting]);
 
   const handleAnswerChange = (questionId, optionIndex) => {
     setSelectedAnswers(prev => {
@@ -371,6 +397,11 @@ export const StudentTestPage = () => {
       </div>
     );
 
+  if (testResult) {
+    const percent = testResult.total ? Math.round((testResult.correct / testResult.total) * 100) : 0;
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4"><div className="bg-white rounded-2xl shadow-lg p-8 max-w-lg w-full text-center"><CheckCircle className="mx-auto text-green-500 mb-4" size={56} /><p className="text-gray-500 mb-2">Тест завершён</p><h1 className="text-3xl font-bold text-gray-900 mb-6">Результат: {testResult.name}</h1><div className="rounded-xl bg-blue-50 p-6"><p className="text-5xl font-bold text-blue-700">{testResult.correct} / {testResult.total}</p><p className="mt-2 text-gray-600">правильных ответов · {percent}%</p></div><p className="mt-6 text-gray-500">Ответы сохранены. Можно закрыть эту страницу.</p></div></div>;
+  }
+
   if (error)
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -448,6 +479,7 @@ export const StudentTestPage = () => {
                 {testQuestions.length}
               </span>
             </div>
+            {isRopTest && <div className={`mt-3 inline-flex rounded-lg px-3 py-2 font-mono font-bold ${secondsLeft <= 10 ? "bg-red-100 text-red-700" : "bg-amber-50 text-amber-800"}`} aria-live="polite">На этот вопрос: {String(Math.floor(secondsLeft / 60)).padStart(2, "0")}:{String(secondsLeft % 60).padStart(2, "0")}</div>}
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6 border-2 border-gray-200 mb-6">

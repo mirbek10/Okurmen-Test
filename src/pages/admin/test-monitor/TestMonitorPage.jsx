@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
+import { Copy } from "lucide-react";
 import { useTestStore } from "@/app/stores/admin/getTsetById";
 import { useAdminStartStore } from "@/app/stores/admin/startTest";
 import { useAdminFinishTestStore } from "@/app/stores/admin/adminFinishTest";
@@ -41,6 +42,17 @@ export default function TestMonitorPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null); // Для модалки
   const lastWsEventKeyRef = useRef("");
+  const ropShareLink = test?.category === "\u0420\u041e\u041f" && test?.code
+    ? `${window.location.origin}/rop-code?code=${encodeURIComponent(test.code)}`
+    : "";
+  const copyRopLink = async () => {
+    try {
+      await navigator.clipboard.writeText(ropShareLink);
+      toast.success("Ссылка на тест скопирована");
+    } catch {
+      toast.error("Не удалось скопировать ссылку");
+    }
+  };
 
   // Получаем данные из Zustand
   const { getTestById, loading, error, test } = useTestStore();
@@ -375,6 +387,7 @@ export default function TestMonitorPage() {
                       {test.code}
                     </span>
                   </p>
+                  {ropShareLink && <button type="button" onClick={copyRopLink} className="mt-2 inline-flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"><Copy size={16} /> Скопировать ссылку для ученика</button>}
                 </div>
               </div>
               {timerStarted && (
