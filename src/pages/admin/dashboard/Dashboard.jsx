@@ -108,6 +108,7 @@ export function Dashboard() {
       if (lower.includes("python")) return { icon: Layers, desc: "Python разработка" };
       if (lower.includes("java")) return { icon: Flame, desc: "Java разработка" };
       if (lower.includes("spring")) return { icon: Server, desc: "Java Spring Framework" };
+      if (lower === "роп") return { icon: Users, desc: "Категория готова к заполнению" };
       return { icon: Zap, desc: "Тестирование знаний" };
     };
 
@@ -123,7 +124,7 @@ export function Dashboard() {
       };
     });
 
-    setTests(availableTests.filter((test) => test.questionsCount > 0));
+    setTests(availableTests.filter((test) => test.questionsCount > 0 || test.category === "РОП"));
   }, [testCategories]);
 
   useEffect(() => {
@@ -189,6 +190,7 @@ export function Dashboard() {
       "Java Основа": "text-amber-600 bg-amber-50",
       "Java Продвинутый": "text-amber-600 bg-amber-50",
       Spring: "text-amber-600 bg-amber-50",
+      "РОП": "text-emerald-700 bg-emerald-50",
     };
     return colors[cat] || "text-slate-500 bg-slate-50";
   };
@@ -239,12 +241,16 @@ export function Dashboard() {
           {tests.map((test) => (
             <div
               key={test.id}
-              onClick={() => handleSelectTest(test)}
-              className="group bg-white rounded-3xl p-6 border border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/5 transition-all cursor-pointer"
+              onClick={test.questionsCount > 0 ? () => handleSelectTest(test) : undefined}
+              aria-disabled={test.questionsCount === 0}
+              className={`group bg-white rounded-3xl p-6 border transition-all ${test.questionsCount > 0
+                ? "border-slate-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/5 cursor-pointer"
+                : "border-slate-200 opacity-75 cursor-not-allowed"
+              }`}
             >
               <div className="flex justify-between items-start mb-6">
                 <div
-                  className={`p-3 rounded-2xl ${getThemeColor(test.category)} transition-transform group-hover:scale-110`}
+                  className={`p-3 rounded-2xl ${getThemeColor(test.category)} transition-transform ${test.questionsCount > 0 ? "group-hover:scale-110" : ""}`}
                 >
                   <test.icon className="w-6 h-6" />
                 </div>
@@ -265,8 +271,11 @@ export function Dashboard() {
                     {test.questionsCount}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-indigo-600 font-bold text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                  Выбрать <ArrowRight className="w-4 h-4" />
+                <div className={`flex items-center gap-1 font-bold text-sm transition-opacity ${test.questionsCount > 0
+                  ? "text-indigo-600 opacity-0 group-hover:opacity-100"
+                  : "text-slate-400 opacity-100"
+                }`}>
+                  {test.questionsCount > 0 ? <>Выбрать <ArrowRight className="w-4 h-4" /></> : "Добавьте вопросы"}
                 </div>
               </div>
             </div>
