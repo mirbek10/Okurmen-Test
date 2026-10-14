@@ -42,17 +42,6 @@ export default function TestMonitorPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null); // Для модалки
   const lastWsEventKeyRef = useRef("");
-  const ropShareLink = test?.category === "\u0420\u041e\u041f" && test?.code
-    ? `${window.location.origin}/rop-code?code=${encodeURIComponent(test.code)}`
-    : "";
-  const copyRopLink = async () => {
-    try {
-      await navigator.clipboard.writeText(ropShareLink);
-      toast.success("Ссылка на тест скопирована");
-    } catch {
-      toast.error("Не удалось скопировать ссылку");
-    }
-  };
 
   // Получаем данные из Zustand
   const { getTestById, loading, error, test } = useTestStore();
@@ -70,6 +59,18 @@ export default function TestMonitorPage() {
   } = useAdminFinishTestStore();
   const { deleteStudent, loading: deleteLoading } =
     useAdminDeleteStudentStore();
+
+  const ropShareLink = test?.category === "\u0420\u041e\u041f" && test?.code
+    ? `${window.location.origin}/rop-code?code=${encodeURIComponent(test.code)}`
+    : "";
+  const copyRopLink = async () => {
+    try {
+      await navigator.clipboard.writeText(ropShareLink);
+      toast.success("Ссылка на тест скопирована");
+    } catch {
+      toast.error("Не удалось скопировать ссылку");
+    }
+  };
 
   // Загружаем тест при монтировании
   useEffect(() => {
