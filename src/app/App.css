@@ -495,12 +495,19 @@ html, body { color: var(--brand-ink); background: var(--brand-page); }
 .auth-admin { margin-top: 14px; padding-top: 13px; }
 .auth-form #auth-code { text-align: center; letter-spacing: .25em; font-size: 22px; font-weight: 700; }
 .auth-form .field-hint { margin: 0; }
+.auth-forgot-link { align-self: flex-end; margin-top: 8px; color: var(--brand-blue); font-size: 13px; font-weight: 700; text-decoration: none; }
+.auth-forgot-link:hover { text-decoration: underline; }
+.password-reset-form { margin-top: 24px; }
+.form-success { margin: 12px 0 0; padding: 12px 14px; border-radius: 11px; background: #edf7ef; color: #246340; font-size: 14px; }
+.auth-bottom a { display: inline-flex; align-items: center; gap: 7px; color: var(--brand-blue); font-weight: 700; text-decoration: none; }
+.auth-bottom a:hover { text-decoration: underline; }
 
 .topbar-profile { display: inline-flex; align-items: center; gap: 8px; padding: 10px 13px; border-radius: 10px; color: var(--brand-blue); font-size: 13px; font-weight: 750; text-decoration: none; }
 .topbar-profile:hover { background: var(--brand-blue-soft); }
 .account-page { max-width: 960px; }
 .account-page .dashboard-account { margin-top: 26px; }
 .account-section-note { margin: 0 0 16px; color: var(--brand-muted); }
+.account-security .primary-button { width: auto; }
 .account-avatar-form { max-width: 700px; margin-top: 22px; }
 .account-avatar-row { display: flex; align-items: stretch; gap: 12px; }
 .account-avatar-row input { flex: 1; min-width: 0; min-height: 48px; padding: 12px 15px; border: 1px solid var(--brand-line); border-radius: 11px; }

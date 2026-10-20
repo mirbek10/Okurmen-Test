@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Camera, Check, GraduationCap, Loader2, UserRound } from "lucide-react";
+import { Camera, Check, GraduationCap, Loader2, LockKeyhole, UserRound } from "lucide-react";
 import { useAuthStore } from "@/app/stores/auth/authStore";
 import { axiosUser } from "@/shared/lib/api/axiosUser";
 
@@ -12,6 +12,9 @@ export function AccountPage() {
   const [teachersLoading, setTeachersLoading] = useState(false);
   const [teacherError, setTeacherError] = useState("");
   const [savingTeacherId, setSavingTeacherId] = useState(null);
+  const [sendingReset, setSendingReset] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
+  const [resetError, setResetError] = useState("");
 
   useEffect(() => {
     if (user?.role !== "user") return;
@@ -55,9 +58,31 @@ export function AccountPage() {
     }
   };
 
+  const requestPasswordReset = async () => {
+    setResetError("");
+    setResetMessage("");
+    setSendingReset(true);
+    try {
+      const response = await axiosUser.post("/auth/forgot-password", { email: user?.email });
+      setResetMessage(response.data.message);
+    } catch (error) {
+      setResetError(error.response?.data?.error || "Не удалось отправить письмо. Попробуйте позже.");
+    } finally {
+      setSendingReset(false);
+    }
+  };
+
   return <div className="dashboard account-page">
     <section className="dashboard-heading">
       <div><span className="section-kicker">Аккаунт</span><h1>Мой профиль</h1><p>Здесь можно изменить фото и выбрать преподавателя.</p></div>
+    </section>
+
+    <section className="dashboard-account account-security">
+      <div className="section-heading"><div><span className="section-kicker">Безопасность</span><h2>Смена пароля</h2></div></div>
+      <p className="account-section-note">Отправим на {user?.email || "вашу почту"} одноразовую ссылку. Она действует 15 минут.</p>
+      <button type="button" className="primary-button" onClick={requestPasswordReset} disabled={sendingReset || !user?.email}><LockKeyhole size={18} /> {sendingReset ? "Отправляем..." : "Отправить ссылку для смены пароля"}</button>
+      {resetMessage && <p className="form-success" role="status">{resetMessage}</p>}
+      {resetError && <p className="form-error" role="alert">{resetError}</p>}
     </section>
 
     <section className="dashboard-account">

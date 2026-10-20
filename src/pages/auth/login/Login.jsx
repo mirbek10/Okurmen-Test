@@ -51,7 +51,7 @@ export default function Login() {
     if (user) navigate("/user/profile", { replace: true });
     else if (Cookies.get("userToken")) {
       fetchUserProfile().catch((profileError) => {
-        if ([401, 404].includes(profileError.response?.status)) Cookies.remove("userToken");
+        if ([401, 403, 404].includes(profileError.response?.status)) Cookies.remove("userToken");
         else setFormError("Не удалось проверить текущий вход. Попробуйте войти снова.");
         clearError();
       });
@@ -160,6 +160,7 @@ export default function Login() {
               </>}
               <label htmlFor="auth-password">Пароль</label>
               <div className="password-field"><input id="auth-password" type={showPassword ? "text" : "password"} autoComplete={mode === "register" ? "new-password" : "current-password"} value={password} onChange={(event) => { setPassword(event.target.value); setFormError(""); if (mode === "admin") clearAdminError(); else clearError(); }} placeholder={mode === "admin" ? "Введите пароль" : "Минимум 6 символов"} disabled={busy} required /><button type="button" aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOff size={19} /> : <Eye size={19} />}</button></div>
+              {mode === "login" && <Link className="auth-forgot-link" to="/auth/forgot-password">Забыли пароль?</Link>}
             </>}
             {visibleError && <p className="form-error" role="alert">{visibleError}</p>}
             <button className="primary-button auth-submit" type="submit" disabled={busy || (mode === "verify" && secondsLeft <= 0)}>{busy ? "Подождите..." : mode === "register" ? "Получить код" : mode === "verify" ? "Подтвердить почту" : "Войти"}<ArrowRight size={19} /></button>

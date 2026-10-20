@@ -17,7 +17,7 @@ export default function ProtectedRoute() {
     setLoadError(false);
     fetchUserProfile()
       .catch((error) => {
-        if (error.response?.status === 401 || error.response?.status === 404) logout();
+        if ([401, 403, 404].includes(error.response?.status)) logout();
         else if (active) setLoadError(true);
       })
       .finally(() => { if (active) setChecking(false); });

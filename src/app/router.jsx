@@ -5,6 +5,7 @@ import ProtectedRoute from "@/widgets/layout/ProtectedRoute";
 import ProfileLayout from "@/widgets/layout/ProfileLayout";
 import AdminLayout from "@/widgets/layout/AdminLayout";
 import Login from "@/pages/auth/login/Login";
+import ForgotPassword from "@/pages/auth/login/ForgotPassword";
 import JoinTest from "@/pages/auth/register/Regist";
 
 const NotFound = lazy(() => import("@/widgets/not-found/not-found").then((m) => ({ default: m.NotFound })));
@@ -33,6 +34,8 @@ export const router = createBrowserRouter([
     { path: "/", element: <Login /> },
     { path: "/auth/login", element: <Login /> },
     { path: "/auth/register", element: <Login /> },
+    { path: "/auth/forgot-password", element: <ForgotPassword /> },
+    { path: "/auth/reset-password", element: <ForgotPassword /> },
     { path: "/rop-code", element: <JoinTest requiredCategory={ROP_CATEGORY} /> },
     { path: "/rop-waiting", element: <WaitingList entryPath="/rop-code" /> },
     { path: "/rop-student-test/:id", element: <StudentTestPage /> },

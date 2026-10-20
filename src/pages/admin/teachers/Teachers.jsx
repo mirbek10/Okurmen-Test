@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { axiosAdmin } from "@/shared/lib/api/axiosAdmin";
-import { PencilLine, Trash2, X, UserPlus, Plus } from "lucide-react";
+import { KeyRound, PencilLine, Trash2, X, UserPlus, Plus } from "lucide-react";
 
 export function TeachersPage() {
   const [teachers, setTeachers] = useState([]);
@@ -8,6 +8,7 @@ export function TeachersPage() {
   const [teachersLoading, setTeachersLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [actionId, setActionId] = useState(null);
 
   const [showUsersModal, setShowUsersModal] = useState(false);
@@ -15,7 +16,7 @@ export function TeachersPage() {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
-  const [editSubjects, setEditSubjects] = useState("");
+  const [editForm, setEditForm] = useState({ name: "", email: "", subjects: "", password: "" });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCreatePassword, setShowCreatePassword] = useState(false);
@@ -102,20 +103,25 @@ export function TeachersPage() {
 
   const openEditModal = (teacher) => {
     setEditingTeacher(teacher);
-    setEditSubjects(
-      Array.isArray(teacher?.subjects) ? teacher.subjects.join(", ") : ""
-    );
+    setEditForm({
+      name: teacher?.name || "",
+      email: teacher?.email || "",
+      subjects: Array.isArray(teacher?.subjects) ? teacher.subjects.join(", ") : "",
+      password: ""
+    });
+    setError("");
     setShowEditModal(true);
   };
 
   const closeEditModal = () => {
     setEditingTeacher(null);
-    setEditSubjects("");
+    setEditForm({ name: "", email: "", subjects: "", password: "" });
     setShowEditModal(false);
   };
 
   const openCreateModal = () => {
     setCreateForm({ name: "", email: "", password: "", subjects: "" });
+    setError("");
     setShowCreatePassword(false);
     setShowCreateModal(true);
   };
@@ -129,11 +135,12 @@ export function TeachersPage() {
     setActionId(user._id);
     setError("");
     try {
-      await axiosAdmin.post("/teachers/toggle", {
+      const response = await axiosAdmin.post("/teachers/toggle", {
         userId: user._id,
         isTeacher: true,
       });
       await loadTeachers();
+      setNotice(response.data?.notificationSent === false ? "Пользователь назначен преподавателем, но письмо не отправлено." : "Пользователь назначен преподавателем. Письмо отправлено.");
     } catch (err) {
       setError(getErrorMessage(err, "Ошибка при добавлении преподавателя"));
     } finally {
@@ -158,6 +165,7 @@ export function TeachersPage() {
         await axiosAdmin.delete(`/teachers/${teacher._id}`);
       }
       await loadTeachers();
+      setNotice("Преподаватель удалён из списка.");
     } catch (err) {
       setError(getErrorMessage(err, "Ошибка при удалении преподавателя"));
     } finally {
@@ -165,21 +173,49 @@ export function TeachersPage() {
     }
   };
 
-  const handleSaveSubjects = async () => {
+  const handleSaveTeacher = async () => {
     if (!editingTeacher?._id) return;
+    if (!editForm.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.email.trim())) {
+      setError("Укажите имя и корректный email для входа.");
+      return;
+    }
+    if (editForm.password && editForm.password.length < 8) {
+      setError("Новый пароль должен содержать минимум 8 символов.");
+      return;
+    }
     setActionId(editingTeacher._id);
     setError("");
     try {
-      const subjects = editSubjects
+      const subjects = editForm.subjects
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean);
 
-      await axiosAdmin.patch(`/teachers/${editingTeacher._id}`, { subjects });
+      const response = await axiosAdmin.patch(`/teachers/${editingTeacher._id}`, {
+        name: editForm.name.trim(),
+        email: editForm.email.trim().toLowerCase(),
+        subjects,
+        ...(editForm.password ? { password: editForm.password } : {})
+      });
       await loadTeachers();
       closeEditModal();
+      setNotice(response.data?.message || "Преподаватель обновлён.");
     } catch (err) {
       setError(getErrorMessage(err, "Ошибка при обновлении преподавателя"));
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleSendResetLink = async (teacher) => {
+    setActionId(teacher._id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await axiosAdmin.post(`/teachers/${teacher._id}/reset-password`);
+      setNotice(response.data?.message || "Ссылка отправлена преподавателю.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Не удалось отправить письмо преподавателю."));
     } finally {
       setActionId(null);
     }
@@ -191,28 +227,27 @@ export function TeachersPage() {
     const email = createForm.email.trim();
     const password = createForm.password;
 
-    if (!name || !email) {
-      setError("Заполните имя и email");
+    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 8) {
+      setError("Укажите имя, email для входа и пароль минимум из 8 символов.");
       return;
     }
 
+    setActionId("create");
     try {
       const subjects = createForm.subjects
         .split(",")
         .map((item) => item.trim())
         .filter(Boolean);
 
-      const payload = { name, email, subjects };
-      if (password && password.trim()) {
-        payload.password = password;
-      }
-
-      await axiosAdmin.post("/teachers/post", payload);
+      const response = await axiosAdmin.post("/teachers/post", { name, email, password, subjects });
 
       await loadTeachers();
       closeCreateModal();
+      setNotice(response.data?.message || "Преподаватель создан.");
     } catch (err) {
       setError(getErrorMessage(err, "Ошибка при создании преподавателя"));
+    } finally {
+      setActionId(null);
     }
   };
 
@@ -259,6 +294,7 @@ export function TeachersPage() {
               {error}
             </div>
           )}
+          {notice && <div className="mt-4 text-sm font-semibold text-emerald-800 bg-emerald-50 px-4 py-3 rounded-xl" role="status">{notice}</div>}
         </div>
 
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
@@ -293,7 +329,13 @@ export function TeachersPage() {
                         </div>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        className="flex items-center gap-2 text-blue-700 bg-blue-50 px-3 py-2 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all"
+                        onClick={() => handleSendResetLink(teacher)}
+                        disabled={actionId === teacher._id}
+                        title="Отправить ссылку для смены пароля"
+                      ><KeyRound size={14} /> Сброс пароля</button>
                       <button
                         className="flex items-center gap-2 text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all"
                         onClick={() => openEditModal(teacher)}
@@ -414,23 +456,32 @@ export function TeachersPage() {
             </div>
 
             <div className="mt-6 space-y-3">
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="create-teacher-name">Имя преподавателя</label>
               <input
+                id="create-teacher-name"
                 className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400"
                 placeholder="Имя"
                 value={createForm.name}
                 onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
               />
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="create-teacher-email">Логин (email)</label>
               <input
+                id="create-teacher-email"
+                type="email"
                 className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400"
                 placeholder="Email"
                 value={createForm.email}
                 onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
               />
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="create-teacher-password">Временный пароль</label>
               <div className="relative">
                 <input
+                  id="create-teacher-password"
                   type={showCreatePassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  minLength={8}
                   className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400 pl-10"
-                  placeholder="Пароль"
+                  placeholder="Минимум 8 символов"
                   value={createForm.password}
                   onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                 />
@@ -472,20 +523,25 @@ export function TeachersPage() {
                   )}
                 </button>
               </div>
+              <p className="text-xs text-slate-500">Логин и временный пароль будут отправлены преподавателю через Resend.</p>
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="create-teacher-subjects">Предметы</label>
               <input
+                id="create-teacher-subjects"
                 className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400"
                 placeholder="Предметы через запятую"
                 value={createForm.subjects}
                 onChange={(e) => setCreateForm({ ...createForm, subjects: e.target.value })}
               />
+              {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
             </div>
 
             <div className="mt-6 flex items-center gap-3">
               <button
                 onClick={handleCreateTeacher}
+                disabled={actionId === "create"}
                 className="flex-1 bg-slate-900 text-white rounded-2xl px-4 py-3 font-bold text-sm hover:bg-slate-800 transition-all"
               >
-                Создать
+                {actionId === "create" ? "Создаём..." : "Создать"}
               </button>
               <button
                 onClick={closeCreateModal}
@@ -506,7 +562,7 @@ export function TeachersPage() {
               <div>
                 <h3 className="text-xl font-black text-slate-800">Редактирование</h3>
                 <p className="text-sm text-slate-400">
-                  Измените список предметов для преподавателя
+                  Измените имя, логин, предметы или задайте новый пароль.
                 </p>
               </div>
               <button
@@ -518,20 +574,27 @@ export function TeachersPage() {
             </div>
 
             <div className="mt-6 space-y-3">
-              <div className="text-sm font-bold text-slate-700">
-                {editingTeacher.name || editingTeacher.username || "Без имени"}
-              </div>
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="edit-teacher-name">Имя преподавателя</label>
+              <input id="edit-teacher-name" className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="edit-teacher-email">Логин (email)</label>
+              <input id="edit-teacher-email" type="email" className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="edit-teacher-subjects">Предметы</label>
               <input
+                id="edit-teacher-subjects"
                 className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400"
                 placeholder="Предметы через запятую"
-                value={editSubjects}
-                onChange={(e) => setEditSubjects(e.target.value)}
+                value={editForm.subjects}
+                onChange={(e) => setEditForm({ ...editForm, subjects: e.target.value })}
               />
+              <label className="block text-sm font-semibold text-slate-700" htmlFor="edit-teacher-password">Новый пароль (необязательно)</label>
+              <input id="edit-teacher-password" type="password" autoComplete="new-password" minLength={8} className="w-full bg-slate-50 rounded-2xl px-4 py-3 text-sm font-semibold outline-none border border-transparent focus:border-emerald-400" placeholder="Оставьте пустым, чтобы не менять" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} />
+              <p className="text-xs text-slate-500">При смене логина или пароля преподаватель получит письмо через Resend.</p>
+              {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
             </div>
 
             <div className="mt-6 flex items-center gap-3">
               <button
-                onClick={handleSaveSubjects}
+                onClick={handleSaveTeacher}
                 disabled={actionId === editingTeacher._id}
                 className="flex-1 bg-emerald-600 text-white rounded-2xl px-4 py-3 font-bold text-sm hover:bg-emerald-700 transition-all"
               >
