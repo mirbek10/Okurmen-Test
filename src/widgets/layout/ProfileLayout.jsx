@@ -1,11 +1,12 @@
 import { createElement, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, ChartNoAxesColumn, ChevronRight, Code2, GraduationCap, History, KeyRound, LayoutDashboard, LogOut, Menu, Trophy, X } from "lucide-react";
+import { BookOpen, ChartNoAxesColumn, ChevronRight, Code2, GraduationCap, History, KeyRound, LayoutDashboard, LogOut, Menu, Trophy, UserRound, X } from "lucide-react";
 import Cookies from "js-cookie";
 import { useAuthStore } from "@/app/stores/auth/authStore";
 
 const primaryLinks = [
   { to: "/user/profile", label: "Главная", Icon: LayoutDashboard },
+  { to: "/user/account", label: "Мой профиль", Icon: UserRound },
   { to: "/user/tests", label: "Тренировки", Icon: BookOpen },
   { to: "/join-test", label: "Тест по коду", Icon: KeyRound },
   { to: "/user/history", label: "История", Icon: History },
@@ -46,11 +47,11 @@ export default function ProfileLayout() {
     </aside>
 
     <div className="portal-content">
-      <header className="portal-topbar"><Link to="/user/profile" className="mobile-brand"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></Link><div className="desktop-page-name">{pageName}</div><div className="topbar-actions"><Link className="topbar-code" to="/join-test"><KeyRound size={17} /> Ввести код</Link><button className="mobile-menu-button" type="button" aria-label="Открыть меню" onClick={() => setMenuOpen(true)}><Menu size={22} /></button></div></header>
+      <header className="portal-topbar"><Link to="/user/profile" className="mobile-brand"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></Link><div className="desktop-page-name">{pageName}</div><div className="topbar-actions"><Link className="topbar-profile" to="/user/account"><UserRound size={18} /> Мой профиль</Link><Link className="topbar-code" to="/join-test"><KeyRound size={17} /> Ввести код</Link><button className="mobile-menu-button" type="button" aria-label="Открыть меню" onClick={() => setMenuOpen(true)}><Menu size={22} /></button></div></header>
       <main className="portal-main"><Outlet /></main>
     </div>
 
-    <nav className="mobile-bottom-nav" aria-label="Быстрая навигация">{primaryLinks.map(({ to, label, Icon }) => <NavLink key={to} to={to} className={({ isActive }) => `mobile-bottom-link ${isActive ? "is-active" : ""}`}>{createElement(Icon, { size: 21, strokeWidth: 1.9 })}<span>{label === "Тест по коду" ? "По коду" : label}</span></NavLink>)}</nav>
+    <nav className="mobile-bottom-nav" aria-label="Быстрая навигация">{primaryLinks.filter(({ to }) => to !== "/user/history").map(({ to, label, Icon }) => <NavLink key={to} to={to} className={({ isActive }) => `mobile-bottom-link ${isActive ? "is-active" : ""}`}>{createElement(Icon, { size: 21, strokeWidth: 1.9 })}<span>{label === "Тест по коду" ? "По коду" : label}</span></NavLink>)}</nav>
     {menuOpen && <div className="mobile-menu-backdrop" onClick={() => setMenuOpen(false)}><div className="mobile-menu-panel" onClick={(event) => event.stopPropagation()}><div className="mobile-menu-heading"><b>Меню</b><button type="button" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)}><X size={21} /></button></div><div className="mobile-menu-account">{user?.username || user?.name || "Ученик"}<small>{user?.email}</small></div><nav aria-label="Все разделы">{[...primaryLinks, ...extraLinks, ...teacherLinks].map(navItem)}</nav><button type="button" className="sidebar-logout" onClick={handleLogout}><LogOut size={18} /> Выйти из аккаунта</button></div></div>}
   </div>;
 }

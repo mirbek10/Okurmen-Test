@@ -52,7 +52,8 @@ interface AuthState {
     error: string | null;
     response: any;
 
-    register: (username: string, email: string, password: string) => Promise<User | null>;
+    register: (username: string, email: string, password: string) => Promise<{ email: string; expiresAt: string }>;
+    verifyRegistration: (email: string, code: string) => Promise<User | null>;
     login: (identifier: string, password: string) => Promise<User | null>;
     logout: () => void;
     clearError: () => void;
@@ -77,19 +78,27 @@ export const useAuthStore = create<AuthState>((set) => ({
                 password
             });
 
-            set({
-                user: response.data.user || null,
-                token: response.data.token || null,
-                loading: false,
-            });
-
-            if (response.data.token) {
-                Cookies.set('userToken', response.data.token, { expires: 7 });
-            }
-            return response.data.user || null;
+            set({ loading: false });
+            return { email: response.data.email, expiresAt: response.data.expiresAt };
         } catch (error: any) {
             set({
                 error: error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed',
+                loading: false
+            });
+            throw error;
+        }
+    },
+
+    verifyRegistration: async (email, code) => {
+        set({ loading: true, error: null });
+        try {
+            const response = await axiosUser.post('/auth/verify-registration', { email, code });
+            set({ user: response.data.user || null, token: response.data.token || null, loading: false });
+            if (response.data.token) Cookies.set('userToken', response.data.token, { expires: 7 });
+            return response.data.user || null;
+        } catch (error: any) {
+            set({
+                error: error.response?.data?.error || error.response?.data?.message || error.message || 'Не удалось подтвердить почту',
                 loading: false
             });
             throw error;

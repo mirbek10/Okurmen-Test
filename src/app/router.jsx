@@ -11,6 +11,7 @@ const NotFound = lazy(() => import("@/widgets/not-found/not-found").then((m) => 
 const WaitingList = lazy(() => import("@/pages/user/WaitingList").then((m) => ({ default: m.WaitingList })));
 const StudentTestPage = lazy(() => import("@/pages/user/Test").then((m) => ({ default: m.StudentTestPage })));
 const UserDashboard = lazy(() => import("@/pages/profile/UserDashboard").then((m) => ({ default: m.UserDashboard })));
+const AccountPage = lazy(() => import("@/pages/profile/AccountPage").then((m) => ({ default: m.AccountPage })));
 const PracticeSelection = lazy(() => import("@/pages/profile/Test").then((m) => ({ default: m.PracticeSelection })));
 const Lider = lazy(() => import("@/pages/profile/Lider").then((m) => ({ default: m.Lider })));
 const PracticeTestPage = lazy(() => import("@/pages/profile/PracticeTestPage").then((m) => ({ default: m.PracticeTestPage })));
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
     { path: "/practice-test/:type", element: <PracticeTestPage /> },
     { path: "/user", element: <ProfileLayout />, children: [
       { path: "profile", element: <UserDashboard /> },
+      { path: "account", element: <AccountPage /> },
       { path: "tests", element: <PracticeSelection /> },
       { path: "leaderboard", element: <Lider /> },
       { path: "history", element: <PracticeHistoryPage /> },
