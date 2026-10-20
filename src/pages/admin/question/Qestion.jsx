@@ -1,285 +1,422 @@
-﻿"use client";
-import React, { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  FileUp,
-  Database,
-  FileText,
-  CheckCircle2,
-  Loader2,
-  Search,
+  AlertTriangle,
+  Check,
   ChevronLeft,
   ChevronRight,
-  Layers,
-  LayoutGrid,
-  Sparkles,
+  FileSpreadsheet,
+  FileUp,
+  Filter,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
 } from "lucide-react";
-import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
 import { toast } from "react-toastify";
+import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
 import { useTestCategoryStore } from "@/app/stores/all/getTestCategory";
 
-export const QuestionsPage = () => {
-  const {
-    questions,
-    loading,
-    uploading,
-    fetchQuestions,
-    uploadXlsx,
-    total,
-    totalPages,
-    page,
-    hasMore,
-    searchQuestions,
-    filterByCategory,
-    setPage,
-  } = useQuestionStore();
+const EMPTY_QUESTION = {
+  question: "",
+  category: "",
+  difficulty: "средний",
+  options: ["", "", "", ""],
+  answer: "",
+};
 
-  const { testCategories, fetchTestCategories } = useTestCategoryStore();
-
-  const [file, setFile] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-
+function ModalShell({ title, description, onClose, children, width = "max-w-2xl" }) {
   useEffect(() => {
-    fetchQuestions();
-    fetchTestCategories();
-  }, []);
+    const closeOnEscape = (event) => event.key === "Escape" && onClose();
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
 
-  const handleUpload = async () => {
-    if (!file) return;
-    const success = await uploadXlsx(file);
-    if (success) {
-      toast.success("База знаний обновлена!");
-      setFile(null);
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/45 p-4 backdrop-blur-sm" onMouseDown={onClose}>
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={`max-h-[92dvh] w-full ${width} overflow-y-auto rounded-[28px] border border-white/70 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.2)]`}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header className="sticky top-0 z-[1] flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 px-5 py-5 backdrop-blur md:px-7">
+          <div>
+            <h2 className="text-xl font-extrabold tracking-tight text-slate-950">{title}</h2>
+            {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+          </div>
+          <button type="button" onClick={onClose} className="rounded-xl bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200 active:scale-95" aria-label="Закрыть">
+            <X size={20} />
+          </button>
+        </header>
+        {children}
+      </section>
+    </div>
+  );
+}
+
+function QuestionModal({ initialQuestion, categories, saving, onClose, onSave }) {
+  const [form, setForm] = useState(() => initialQuestion
+    ? {
+        question: initialQuestion.question || "",
+        category: initialQuestion.category || "",
+        difficulty: initialQuestion.difficulty || "средний",
+        options: Array.from({ length: 4 }, (_, index) => initialQuestion.options?.[index] || ""),
+        answer: initialQuestion.answer || "",
+      }
+    : { ...EMPTY_QUESTION, options: [...EMPTY_QUESTION.options] });
+  const [formError, setFormError] = useState("");
+
+  const changeOption = (index, value) => {
+    setForm((current) => {
+      const options = [...current.options];
+      const previousValue = options[index];
+      options[index] = value;
+      return { ...current, options, answer: current.answer === previousValue ? value : current.answer };
+    });
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setFormError("");
+    if (!form.question.trim() || !form.category.trim() || form.options.some((option) => !option.trim())) {
+      setFormError("Заполните вопрос, раздел и все четыре варианта ответа.");
+      return;
+    }
+    if (!form.answer || !form.options.includes(form.answer)) {
+      setFormError("Отметьте правильный вариант ответа.");
+      return;
+    }
+    try {
+      await onSave({ ...form, options: form.options.map((option) => option.trim()) });
+    } catch (error) {
+      setFormError(error.message);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F1F5F9] text-slate-900 font-sans selection:bg-indigo-100">
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-indigo-200/40 blur-[120px]" />
-        <div className="absolute top-[60%] -right-[5%] w-[30%] h-[30%] rounded-full bg-violet-200/40 blur-[100px]" />
-      </div>
+    <ModalShell
+      title={initialQuestion ? "Изменить вопрос" : "Новый вопрос"}
+      description="Заполните данные и отметьте один правильный ответ."
+      onClose={onClose}
+    >
+      <form onSubmit={submit} className="space-y-6 p-5 md:p-7">
+        <label className="grid gap-2 text-sm font-bold text-slate-700">
+          Текст вопроса
+          <textarea
+            value={form.question}
+            onChange={(event) => setForm({ ...form, question: event.target.value })}
+            className="min-h-28 resize-y rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            placeholder="Введите вопрос"
+            autoFocus
+          />
+        </label>
 
-      <div className="relative z-10 max-w-7xl mx-auto p-4 md:p-8">
-        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-2 text-sm font-bold text-slate-700">
+            Раздел
+            <input
+              list="question-categories"
+              value={form.category}
+              onChange={(event) => setForm({ ...form, category: event.target.value })}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              placeholder="Например, РОП"
+            />
+            <datalist id="question-categories">
+              {categories.map((category) => <option key={category} value={category} />)}
+            </datalist>
+          </label>
+          <label className="grid gap-2 text-sm font-bold text-slate-700">
+            Сложность
+            <select
+              value={form.difficulty}
+              onChange={(event) => setForm({ ...form, difficulty: event.target.value })}
+              className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            >
+              <option value="легкий">Лёгкий</option>
+              <option value="средний">Средний</option>
+              <option value="сложный">Сложный</option>
+            </select>
+          </label>
+        </div>
+
+        <fieldset className="space-y-3">
+          <legend className="mb-3 text-sm font-bold text-slate-700">Варианты ответа</legend>
+          {form.options.map((option, index) => (
+            <label key={index} className={`flex items-center gap-3 rounded-2xl border p-3 transition ${form.answer === option && option ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50"}`}>
+              <input
+                type="radio"
+                name="correct-answer"
+                checked={Boolean(option) && form.answer === option}
+                onChange={() => setForm({ ...form, answer: option })}
+                disabled={!option}
+                className="h-5 w-5 accent-emerald-600"
+              />
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white text-xs font-black text-slate-500 shadow-sm">
+                {String.fromCharCode(65 + index)}
+              </span>
+              <input
+                value={option}
+                onChange={(event) => changeOption(index, event.target.value)}
+                className="min-w-0 flex-1 bg-transparent py-2 text-sm font-medium outline-none"
+                placeholder={`Вариант ${index + 1}`}
+              />
+              {form.answer === option && option && <Check size={18} className="text-emerald-600" />}
+            </label>
+          ))}
+          <p className="text-xs text-slate-500">Кружок слева отмечает правильный ответ.</p>
+        </fieldset>
+
+        {formError && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{formError}</p>}
+
+        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="rounded-xl px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100">Отмена</button>
+          <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800 active:scale-[0.98] disabled:opacity-50">
+            {saving && <Loader2 size={18} className="animate-spin" />}
+            {initialQuestion ? "Сохранить изменения" : "Добавить вопрос"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
+function UploadModal({ uploading, onClose, onUpload }) {
+  const [file, setFile] = useState(null);
+  const [uploadError, setUploadError] = useState("");
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!file) return setUploadError("Выберите файл Excel.");
+    try {
+      setUploadError("");
+      await onUpload(file);
+    } catch (error) {
+      setUploadError(error.message);
+    }
+  };
+
+  return (
+    <ModalShell title="Загрузить вопросы" description="Выберите Excel-файл с вопросами по разделам." onClose={onClose} width="max-w-lg">
+      <form onSubmit={submit} className="space-y-5 p-5 md:p-7">
+        <label className={`grid min-h-52 cursor-pointer place-items-center rounded-[24px] border-2 border-dashed p-6 text-center transition ${file ? "border-blue-400 bg-blue-50" : "border-slate-300 bg-slate-50 hover:border-blue-400"}`}>
+          <input type="file" accept=".xlsx,.xls" className="sr-only" onChange={(event) => setFile(event.target.files?.[0] || null)} />
+          <span>
+            {file ? <FileSpreadsheet className="mx-auto mb-3 text-blue-700" size={40} /> : <FileUp className="mx-auto mb-3 text-slate-400" size={40} />}
+            <strong className="block text-sm text-slate-800">{file ? file.name : "Нажмите и выберите Excel-файл"}</strong>
+            <small className="mt-2 block text-slate-500">Поддерживаются форматы .xlsx и .xls</small>
+          </span>
+        </label>
+        <div className="flex gap-3 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
+          <AlertTriangle size={20} className="mt-0.5 shrink-0" />
+          <p>Импорт заменит текущую базу вопросов данными из файла.</p>
+        </div>
+        {uploadError && <p role="alert" className="text-sm font-semibold text-red-700">{uploadError}</p>}
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="rounded-xl px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100">Отмена</button>
+          <button type="submit" disabled={!file || uploading} className="flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800 active:scale-[0.98] disabled:opacity-50">
+            {uploading && <Loader2 size={18} className="animate-spin" />}
+            Загрузить файл
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
+function DeleteModal({ question, saving, onClose, onConfirm }) {
+  return (
+    <ModalShell title="Удалить вопрос?" description="Это действие нельзя отменить." onClose={onClose} width="max-w-md">
+      <div className="p-5 md:p-7">
+        <p className="rounded-2xl bg-slate-50 p-4 text-sm font-semibold leading-relaxed text-slate-700">{question.question}</p>
+        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="rounded-xl px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100">Отмена</button>
+          <button type="button" disabled={saving} onClick={onConfirm} className="flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-red-700 active:scale-[0.98] disabled:opacity-50">
+            {saving && <Loader2 size={18} className="animate-spin" />}
+            Удалить
+          </button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+export const QuestionsPage = () => {
+  const store = useQuestionStore();
+  const { testCategories, fetchTestCategories } = useTestCategoryStore();
+  const [searchValue, setSearchValue] = useState("");
+  const [editorQuestion, setEditorQuestion] = useState(null);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  useEffect(() => {
+    store.fetchQuestions({ page: 1 });
+    fetchTestCategories();
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => store.searchQuestions(searchValue.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [searchValue]);
+
+  const categories = useMemo(() => Array.from(new Set([
+    ...store.allCategories,
+    ...testCategories.map((item) => item.category).filter(Boolean),
+  ])).sort((a, b) => a.localeCompare(b, "ru")), [store.allCategories, testCategories]);
+
+  const grandTotal = store.categoryStats.reduce((sum, item) => sum + item.count, 0);
+  const openCreate = () => { setEditorQuestion(null); setEditorOpen(true); };
+  const openEdit = (question) => { setEditorQuestion(question); setEditorOpen(true); };
+
+  const saveQuestion = async (payload) => {
+    if (editorQuestion) await store.updateQuestion(editorQuestion._id, payload);
+    else await store.createQuestion(payload);
+    toast.success(editorQuestion ? "Вопрос изменён" : "Вопрос добавлен");
+    setEditorOpen(false);
+  };
+
+  const uploadFile = async (file) => {
+    const result = await store.uploadXlsx(file);
+    toast.success(`Загружено вопросов: ${result.count || 0}`);
+    setSearchValue("");
+    setUploadOpen(false);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await store.deleteQuestion(deleteTarget._id);
+      toast.success("Вопрос удалён");
+      setDeleteTarget(null);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  return (
+    <main className="min-h-[100dvh] bg-slate-50 px-4 py-6 text-slate-900 md:px-8 md:py-9">
+      <div className="mx-auto max-w-[1400px]">
+        <header className="flex flex-col gap-6 border-b border-slate-200 pb-7 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="p-2 bg-indigo-600 rounded-lg text-white">
-                <Database size={20} />
-              </span>
-              <span className="text-sm font-bold text-indigo-600 uppercase tracking-widest">
-                Admin Panel
-              </span>
-            </div>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900">
-              Управление{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600">
-                Вопросами
-              </span>
-            </h1>
+            <span className="text-xs font-black uppercase tracking-[0.18em] text-blue-700">Общий мониторинг</span>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">База вопросов</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">Просматривайте все разделы, находите вопросы и управляйте каждым вопросом отдельно.</p>
           </div>
-          <div className="flex items-center gap-3 bg-white/60 backdrop-blur-md p-2 rounded-2xl border border-white shadow-sm">
-            <div className="px-4 py-2">
-              <p className="text-[10px] uppercase font-bold text-slate-400 leading-none mb-1">
-                Всего записей
-              </p>
-              <p className="text-xl font-black text-slate-800">
-                {total.toLocaleString()}
-              </p>
-            </div>
+          <div className="grid grid-cols-2 gap-3 sm:flex">
+            <button type="button" onClick={() => setUploadOpen(true)} className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 active:scale-[0.98]">
+              <FileUp size={18} /> Загрузить файл
+            </button>
+            <button type="button" onClick={openCreate} className="flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-800 active:scale-[0.98]">
+              <Plus size={18} /> Новый вопрос
+            </button>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-4 space-y-6">
-            <section className="bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white shadow-xl shadow-slate-200/50">
-              <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <FileUp className="text-indigo-600" size={20} /> Загрузить
-                данные
-              </h3>
-
-              <div className="group relative">
-                <input
-                  type="file"
-                  id="file-upload"
-                  onChange={(e) => setFile(e.target.files[0])}
-                  className="hidden"
-                />
-                <label
-                  htmlFor="file-upload"
-                  className={`flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-[2rem] cursor-pointer transition-all
-                    ${file ? "border-indigo-400 bg-indigo-50/50" : "border-slate-200 hover:border-indigo-300 hover:bg-slate-50"}`}
-                >
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    {file ? (
-                      <FileText className="w-10 h-10 mb-3 text-indigo-600 animate-bounce" />
-                    ) : (
-                      <Layers className="w-10 h-10 mb-3 text-slate-300 group-hover:text-indigo-400 transition-colors" />
-                    )}
-                    <p className="text-sm font-medium text-slate-600 px-4 text-center">
-                      {file ? file.name : "Перетащите Excel или кликните"}
-                    </p>
-                  </div>
-                </label>
-              </div>
-
-              <button
-                disabled={!file || uploading}
-                onClick={handleUpload}
-                className="w-full mt-6 bg-gradient-to-r from-indigo-600 to-violet-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:shadow-indigo-300 active:scale-[0.98] disabled:opacity-40 disabled:scale-100 transition-all flex justify-center items-center gap-2"
-              >
-                {uploading ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Sparkles size={18} />
-                )}
-                {uploading ? "Импорт..." : "Обновить базу данных"}
-              </button>
-            </section>
+        <section className="mt-7 overflow-hidden rounded-[24px] border border-slate-200 bg-white" aria-label="Статистика по разделам">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+            <div>
+              <h2 className="font-extrabold text-slate-900">Разделы</h2>
+              <p className="text-xs text-slate-500">Нажмите на раздел, чтобы отфильтровать список</p>
+            </div>
+            <strong className="font-mono text-2xl text-blue-700">{grandTotal}</strong>
           </div>
+          <div className="flex snap-x gap-2 overflow-x-auto p-3 md:p-4">
+            <button type="button" onClick={() => store.filterByCategory("")} className={`min-w-36 snap-start rounded-2xl border px-4 py-3 text-left transition ${store.category === "" ? "border-blue-700 bg-blue-700 text-white" : "border-slate-200 bg-slate-50 hover:border-blue-300"}`}>
+              <span className="block text-xs font-bold opacity-70">Все вопросы</span>
+              <strong className="mt-1 block font-mono text-xl">{grandTotal}</strong>
+            </button>
+            {categories.map((category) => {
+              const count = store.categoryStats.find((item) => item.category === category)?.count || 0;
+              return (
+                <button key={category} type="button" onClick={() => store.filterByCategory(category)} className={`min-w-40 snap-start rounded-2xl border px-4 py-3 text-left transition ${store.category === category ? "border-blue-700 bg-blue-700 text-white" : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50"}`}>
+                  <span className="block truncate text-xs font-bold opacity-75">{category}</span>
+                  <strong className="mt-1 block font-mono text-xl">{count}</strong>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
-          <div className="lg:col-span-8 space-y-6">
-            <div className="bg-white/80 backdrop-blur-xl p-4 rounded-[2rem] border border-white shadow-lg shadow-slate-200/50 flex flex-col gap-4">
-              <div className="relative">
-                <Search
-                  className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
-                  size={20}
-                />
-                <input
-                  className="w-full pl-14 pr-6 py-4 bg-slate-100/50 border border-transparent focus:border-indigo-300 focus:bg-white rounded-2xl outline-none transition-all placeholder:text-slate-400"
-                  placeholder="Найти вопрос..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    searchQuestions(e.target.value);
-                  }}
-                />
-              </div>
+        <section className="mt-5 grid gap-3 rounded-[24px] border border-slate-200 bg-white p-4 lg:grid-cols-[minmax(260px,1fr)_240px_200px]">
+          <label className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
+            <input value={searchValue} onChange={(event) => setSearchValue(event.target.value)} placeholder="Поиск по вопросу или ответу" className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-medium outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" />
+          </label>
+          <label className="relative">
+            <Filter className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <select value={store.category} onChange={(event) => store.filterByCategory(event.target.value)} className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm font-bold outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100">
+              <option value="">Все разделы</option>
+              {categories.map((category) => <option key={category} value={category}>{category}</option>)}
+            </select>
+          </label>
+          <select value={store.difficulty} onChange={(event) => store.filterByDifficulty(event.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100">
+            <option value="">Любая сложность</option>
+            <option value="легкий">Лёгкие</option>
+            <option value="средний">Средние</option>
+            <option value="сложный">Сложные</option>
+          </select>
+        </section>
 
-              <div className="flex flex-wrap justify-between items-center gap-4 px-2">
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {[
-                    "",
-                    ...testCategories.map((c) => c.category),
-                  ].map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => {
-                        setCategoryFilter(cat);
-                        filterByCategory(cat);
-                      }}
-                      className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all
-                        ${categoryFilter === cat
-                          ? "bg-slate-900 text-white shadow-lg"
-                          : "bg-white text-slate-500 hover:bg-indigo-50 border border-slate-100"
-                        }`}
-                    >
-                      {cat || "Все"}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center bg-slate-100 rounded-xl p-1">
-                  <button
-                    disabled={page <= 1}
-                    onClick={() => setPage(page - 1)}
-                    className="p-2 hover:bg-white rounded-lg disabled:opacity-20 transition-all shadow-sm"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <span className="px-4 text-xs font-bold text-slate-600">
-                    {page} / {totalPages}
-                  </span>
-                  <button
-                    disabled={!hasMore}
-                    onClick={() => setPage(page + 1)}
-                    className="p-2 hover:bg-white rounded-lg disabled:opacity-20 transition-all shadow-sm"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2 no-scrollbar">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center py-32 gap-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                    <LayoutGrid
-                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-indigo-600"
-                      size={20}
-                    />
-                  </div>
-                  <p className="font-bold text-slate-400 animate-pulse">
-                    Загрузка базы...
-                  </p>
-                </div>
-              ) : questions.length > 0 ? (
-                questions.map((q, idx) => (
-                  <div
-                    key={q._id}
-                    className="group bg-white p-6 rounded-[2rem] border border-white shadow-sm hover:shadow-xl hover:shadow-indigo-100 transition-all duration-300"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <span className="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-bold text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-400 transition-colors">
-                        #{q._id.slice(-6).toUpperCase()}
-                      </span>
-                      <span className="px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-indigo-100">
-                        {q.category}
-                      </span>
-                    </div>
-
-                    <h4 className="text-lg font-bold text-slate-800 mb-6 leading-snug">
-                      {q.question}
-                    </h4>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {q.options.map((opt, i) => {
-                        const isCorrect = opt === q.answer;
-                        const label = String.fromCharCode(65 + i);
-
-                        return (
-                          <div
-                            key={i}
-                            className={`flex items-center gap-3 p-4 rounded-2xl border transition-all
-                              ${isCorrect
-                                ? "bg-emerald-50 border-emerald-200 text-emerald-700 ring-1 ring-emerald-200"
-                                : "bg-slate-50 border-slate-100 text-slate-600"
-                              }`}
-                          >
-                            <span
-                              className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-black
-                              ${isCorrect ? "bg-emerald-500 text-white" : "bg-white text-slate-400 border border-slate-200"}`}
-                            >
-                              {label}
-                            </span>
-                            <span className="text-sm font-medium">{opt}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="bg-white/40 border-2 border-dashed border-slate-200 rounded-[2rem] py-20 text-center">
-                  <div className="bg-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm text-slate-300">
-                    <Search size={32} />
-                  </div>
-                  <p className="text-slate-500 font-bold text-lg">
-                    Вопросы не найдены
-                  </p>
-                  <p className="text-slate-400 text-sm">
-                    Попробуйте изменить параметры поиска
-                  </p>
-                </div>
-              )}
-            </div>
+        <div className="mt-5 flex items-center justify-between gap-3 px-1">
+          <p className="text-sm font-semibold text-slate-500">Найдено: <span className="font-mono text-slate-900">{store.total}</span></p>
+          <div className="flex items-center gap-2">
+            <button disabled={store.page <= 1 || store.loading} onClick={() => store.setPage(store.page - 1)} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 disabled:opacity-30"><ChevronLeft size={19} /></button>
+            <span className="min-w-20 text-center font-mono text-sm font-bold">{store.page} / {store.totalPages}</span>
+            <button disabled={!store.hasMore || store.loading} onClick={() => store.setPage(store.page + 1)} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 disabled:opacity-30"><ChevronRight size={19} /></button>
           </div>
         </div>
+
+        <section className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+          {store.loading ? (
+            <div className="space-y-3 p-5">
+              {[1, 2, 3, 4].map((item) => <div key={item} className="h-28 animate-pulse rounded-2xl bg-slate-100" />)}
+            </div>
+          ) : store.error ? (
+            <div className="p-12 text-center"><AlertTriangle className="mx-auto mb-3 text-red-500" /><strong className="block text-slate-900">Не удалось загрузить вопросы</strong><p className="mt-1 text-sm text-red-600">{store.error}</p></div>
+          ) : store.questions.length === 0 ? (
+            <div className="p-12 text-center"><Search className="mx-auto mb-3 text-slate-300" size={34} /><strong className="block text-slate-900">Вопросы не найдены</strong><p className="mt-1 text-sm text-slate-500">Измените фильтры или добавьте новый вопрос.</p></div>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {store.questions.map((question, index) => (
+                <article key={question._id} className="group p-5 transition hover:bg-slate-50/70 md:p-6">
+                  <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
+                    <div className="min-w-0">
+                      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold">
+                        <span className="font-mono text-slate-400">#{(store.page - 1) * 20 + index + 1}</span>
+                        <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">{question.category}</span>
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{question.difficulty || "средний"}</span>
+                      </div>
+                      <h3 className="text-base font-extrabold leading-relaxed text-slate-900 md:text-lg">{question.question}</h3>
+                      <div className="mt-4 grid gap-2 md:grid-cols-2">
+                        {question.options.map((option, optionIndex) => {
+                          const correct = option === question.answer;
+                          return (
+                            <div key={`${question._id}-${optionIndex}`} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm ${correct ? "border-emerald-200 bg-emerald-50 font-bold text-emerald-800" : "border-slate-200 bg-white text-slate-600"}`}>
+                              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-black ${correct ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}>{String.fromCharCode(65 + optionIndex)}</span>
+                              <span>{option}</span>
+                              {correct && <Check size={16} className="ml-auto shrink-0" />}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 lg:opacity-70 lg:transition lg:group-hover:opacity-100">
+                      <button type="button" onClick={() => openEdit(question)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 lg:flex-none" aria-label="Изменить вопрос"><Pencil size={17} /> <span className="lg:hidden xl:inline">Изменить</span></button>
+                      <button type="button" onClick={() => setDeleteTarget(question)} className="rounded-xl border border-red-100 bg-red-50 p-2.5 text-red-600 transition hover:bg-red-100" aria-label="Удалить вопрос"><Trash2 size={18} /></button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
-    </div>
+
+      {editorOpen && <QuestionModal initialQuestion={editorQuestion} categories={categories} saving={store.saving} onClose={() => setEditorOpen(false)} onSave={saveQuestion} />}
+      {uploadOpen && <UploadModal uploading={store.uploading} onClose={() => setUploadOpen(false)} onUpload={uploadFile} />}
+      {deleteTarget && <DeleteModal question={deleteTarget} saving={store.saving} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete} />}
+    </main>
   );
 };
-
-

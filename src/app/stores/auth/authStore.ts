@@ -40,6 +40,9 @@ interface User {
     rating: number;
     testsCount?: number;
     studentsCount?: number;
+    teacherId?: string;
+    teacherName?: string;
+    teacherAvatar?: string;
 }
 
 interface AuthState {
@@ -55,6 +58,7 @@ interface AuthState {
     clearError: () => void;
     fetchUserProfile: () => Promise<User | null>;
     updateAvatar: (avatarUrl: string) => Promise<void>;
+    updateTeacher: (teacherId: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -158,6 +162,29 @@ export const useAuthStore = create<AuthState>((set) => ({
         } catch (error: any) {
             set({
                 error: error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update avatar',
+                loading: false
+            });
+            throw error;
+        }
+    },
+
+    updateTeacher: async (teacherId) => {
+        set({ loading: true, error: null });
+        try {
+            const response = await axiosUser.put('/auth/teacher', { teacherId });
+            const teacher = response.data.teacher;
+            set(prevState => ({
+                user: prevState.user ? {
+                    ...prevState.user,
+                    teacherId: teacher?.id,
+                    teacherName: teacher?.name,
+                    teacherAvatar: teacher?.avatar,
+                } : null,
+                loading: false
+            }));
+        } catch (error: any) {
+            set({
+                error: error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update teacher',
                 loading: false
             });
             throw error;
