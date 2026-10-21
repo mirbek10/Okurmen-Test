@@ -7,6 +7,7 @@ import AdminLayout from "@/widgets/layout/AdminLayout";
 import Login from "@/pages/auth/login/Login";
 import ForgotPassword from "@/pages/auth/login/ForgotPassword";
 import JoinTest from "@/pages/auth/register/Regist";
+import RouteError from "@/widgets/route-error/RouteError";
 
 const NotFound = lazy(() => import("@/widgets/not-found/not-found").then((m) => ({ default: m.NotFound })));
 const WaitingList = lazy(() => import("@/pages/user/WaitingList").then((m) => ({ default: m.WaitingList })));
@@ -30,7 +31,7 @@ const AddQuestion = lazy(() => import("@/pages/admin/add-question/AddQuestion").
 const ROP_CATEGORY = "\u0420\u041e\u041f";
 
 export const router = createBrowserRouter([
-  { element: <UserLayout />, children: [
+  { element: <UserLayout />, errorElement: <RouteError />, children: [
     { path: "/", element: <Login /> },
     { path: "/auth/login", element: <Login /> },
     { path: "/auth/register", element: <Login /> },
@@ -40,7 +41,7 @@ export const router = createBrowserRouter([
     { path: "/rop-waiting", element: <WaitingList entryPath="/rop-code" /> },
     { path: "/rop-student-test/:id", element: <StudentTestPage /> },
   ] },
-  { element: <ProtectedRoute />, children: [
+  { element: <ProtectedRoute />, errorElement: <RouteError />, children: [
     { path: "/join-test", element: <JoinTest /> },
     { path: "/student-waiting-list", element: <WaitingList /> },
     { path: "/student-test/:id", element: <StudentTestPage /> },
@@ -58,7 +59,7 @@ export const router = createBrowserRouter([
       { path: "leaderboard", element: <TeacherLeaderboard /> },
     ] },
   ] },
-  { path: "/admin", element: <AdminLayout />, children: [
+  { path: "/admin", element: <AdminLayout />, errorElement: <RouteError />, children: [
     { path: "dashboard", element: <Dashboard /> },
     { path: "test-monitor/:id", element: <TestMonitorPage /> },
     { path: "resalt", element: <Result /> },
