@@ -5,18 +5,18 @@ import {
   ChevronLeft,
   ChevronRight,
   FileSpreadsheet,
+  FileJson,
   FileUp,
   Filter,
   Loader2,
-  Pencil,
   Plus,
   Search,
-  Trash2,
   X,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
 import { useTestCategoryStore } from "@/app/stores/all/getTestCategory";
+import { QuestionCard } from "./QuestionCard";
 
 const EMPTY_QUESTION = {
   question: "",
@@ -226,6 +226,73 @@ function UploadModal({ uploading, onClose, onUpload }) {
   );
 }
 
+function JsonImportModal({ uploading, onClose, onImport }) {
+  const [source, setSource] = useState("");
+  const [fileName, setFileName] = useState("");
+  const [error, setError] = useState("");
+
+  const parsed = useMemo(() => {
+    if (!source.trim()) return null;
+    try {
+      const value = JSON.parse(source);
+      const questions = Array.isArray(value) ? value : Array.isArray(value?.questions) ? value.questions : [value];
+      if (!questions.length || questions.length > 200) throw new Error("В файле должно быть от 1 до 200 вопросов.");
+      questions.forEach((question, index) => {
+        if (!question || typeof question.question !== "string" || !question.question.trim() || typeof question.category !== "string" || !question.category.trim() || !Array.isArray(question.options) || question.options.length !== 4 || question.options.some((option) => typeof option !== "string" || !option.trim()) || !question.options.includes(question.answer)) {
+          throw new Error(`Вопрос №${index + 1}: укажите раздел, текст, четыре варианта и правильный ответ.`);
+        }
+      });
+      return { questions };
+    } catch (parseError) {
+      return { error: parseError instanceof SyntaxError ? "Проверьте синтаксис JSON." : parseError.message };
+    }
+  }, [source]);
+
+  const readFile = async (file) => {
+    if (!file) return;
+    setError("");
+    setFileName(file.name);
+    try {
+      setSource(await file.text());
+    } catch {
+      setError("Не удалось прочитать файл.");
+    }
+  };
+
+  const submit = async (event) => {
+    event.preventDefault();
+    if (!parsed?.questions) return setError(parsed?.error || "Добавьте JSON с вопросами.");
+    setError("");
+    try {
+      await onImport(parsed.questions);
+    } catch (importError) {
+      setError(importError.message);
+    }
+  };
+
+  return (
+    <ModalShell title="Импорт вопросов из JSON" description="Добавьте вопросы в существующую базу. Повторяющиеся вопросы будут пропущены." onClose={onClose} width="max-w-3xl">
+      <form onSubmit={submit} className="space-y-5 p-5 md:p-7">
+        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-blue-300 bg-blue-50 px-4 py-4 text-sm font-bold text-blue-800 transition hover:bg-blue-100">
+          <FileJson size={20} /> {fileName || "Выбрать файл .json"}
+          <input type="file" accept=".json,application/json" className="sr-only" onChange={(event) => readFile(event.target.files?.[0])} />
+        </label>
+        <label className="grid gap-2 text-sm font-bold text-slate-700">
+          Или вставьте JSON
+          <textarea value={source} onChange={(event) => { setSource(event.target.value); setFileName(""); setError(""); }} rows={11} spellCheck={false} className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100" placeholder={'[{"question":"Текст вопроса","category":"РОП","options":["A","B","C","D"],"answer":"A","difficulty":"средний"}]'} />
+        </label>
+        <p className="text-xs leading-relaxed text-slate-500">Формат: массив вопросов или объект с полем questions. Каждый вопрос содержит question, category, options (4 строки) и answer. За один раз — до 200 вопросов.</p>
+        {parsed?.questions && <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">Готово к импорту: {parsed.questions.length} вопросов</p>}
+        {(error || parsed?.error) && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error || parsed.error}</p>}
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="rounded-xl px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100">Отмена</button>
+          <button type="submit" disabled={!parsed?.questions || uploading} className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800 disabled:opacity-50">{uploading && <Loader2 size={18} className="animate-spin" />} Импортировать</button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
 function DeleteModal({ question, saving, onClose, onConfirm }) {
   return (
     <ModalShell title="Удалить вопрос?" description="Это действие нельзя отменить." onClose={onClose} width="max-w-md">
@@ -250,6 +317,7 @@ export const QuestionsPage = () => {
   const [editorQuestion, setEditorQuestion] = useState(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [jsonOpen, setJsonOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
@@ -285,6 +353,13 @@ export const QuestionsPage = () => {
     setUploadOpen(false);
   };
 
+  const importJson = async (questions) => {
+    const result = await store.importJson(questions);
+    toast.success(`Добавлено: ${result.insertedCount || 0}. Повторов: ${result.skippedDuplicates || 0}`);
+    setSearchValue("");
+    setJsonOpen(false);
+  };
+
   const confirmDelete = async () => {
     try {
       await store.deleteQuestion(deleteTarget._id);
@@ -304,9 +379,12 @@ export const QuestionsPage = () => {
             <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950 md:text-4xl">База вопросов</h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-500">Просматривайте все разделы, находите вопросы и управляйте каждым вопросом отдельно.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:flex">
+          <div className="grid gap-3 sm:flex">
             <button type="button" onClick={() => setUploadOpen(true)} className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 active:scale-[0.98]">
-              <FileUp size={18} /> Загрузить файл
+              <FileUp size={18} /> Импорт Excel
+            </button>
+            <button type="button" onClick={() => setJsonOpen(true)} className="flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 active:scale-[0.98]">
+              <FileJson size={18} /> Импорт JSON
             </button>
             <button type="button" onClick={openCreate} className="flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-800 active:scale-[0.98]">
               <Plus size={18} /> Новый вопрос
@@ -368,7 +446,7 @@ export const QuestionsPage = () => {
           </div>
         </div>
 
-        <section className="mt-4 overflow-hidden rounded-[24px] border border-slate-200 bg-white">
+        <section className="mt-4" aria-label="Список вопросов">
           {store.loading ? (
             <div className="space-y-3 p-5">
               {[1, 2, 3, 4].map((item) => <div key={item} className="h-28 animate-pulse rounded-2xl bg-slate-100" />)}
@@ -378,36 +456,9 @@ export const QuestionsPage = () => {
           ) : store.questions.length === 0 ? (
             <div className="p-12 text-center"><Search className="mx-auto mb-3 text-slate-300" size={34} /><strong className="block text-slate-900">Вопросы не найдены</strong><p className="mt-1 text-sm text-slate-500">Измените фильтры или добавьте новый вопрос.</p></div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="grid gap-4">
               {store.questions.map((question, index) => (
-                <article key={question._id} className="group p-5 transition hover:bg-slate-50/70 md:p-6">
-                  <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto]">
-                    <div className="min-w-0">
-                      <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold">
-                        <span className="font-mono text-slate-400">#{(store.page - 1) * 20 + index + 1}</span>
-                        <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">{question.category}</span>
-                        <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{question.difficulty || "средний"}</span>
-                      </div>
-                      <h3 className="text-base font-extrabold leading-relaxed text-slate-900 md:text-lg">{question.question}</h3>
-                      <div className="mt-4 grid gap-2 md:grid-cols-2">
-                        {question.options.map((option, optionIndex) => {
-                          const correct = option === question.answer;
-                          return (
-                            <div key={`${question._id}-${optionIndex}`} className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm ${correct ? "border-emerald-200 bg-emerald-50 font-bold text-emerald-800" : "border-slate-200 bg-white text-slate-600"}`}>
-                              <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg text-xs font-black ${correct ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-500"}`}>{String.fromCharCode(65 + optionIndex)}</span>
-                              <span>{option}</span>
-                              {correct && <Check size={16} className="ml-auto shrink-0" />}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 lg:opacity-70 lg:transition lg:group-hover:opacity-100">
-                      <button type="button" onClick={() => openEdit(question)} className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:border-blue-300 hover:text-blue-700 lg:flex-none" aria-label="Изменить вопрос"><Pencil size={17} /> <span className="lg:hidden xl:inline">Изменить</span></button>
-                      <button type="button" onClick={() => setDeleteTarget(question)} className="rounded-xl border border-red-100 bg-red-50 p-2.5 text-red-600 transition hover:bg-red-100" aria-label="Удалить вопрос"><Trash2 size={18} /></button>
-                    </div>
-                  </div>
-                </article>
+                <QuestionCard key={question._id} question={question} number={(store.page - 1) * 20 + index + 1} onEdit={openEdit} onDelete={setDeleteTarget} />
               ))}
             </div>
           )}
@@ -416,6 +467,7 @@ export const QuestionsPage = () => {
 
       {editorOpen && <QuestionModal initialQuestion={editorQuestion} categories={categories} saving={store.saving} onClose={() => setEditorOpen(false)} onSave={saveQuestion} />}
       {uploadOpen && <UploadModal uploading={store.uploading} onClose={() => setUploadOpen(false)} onUpload={uploadFile} />}
+      {jsonOpen && <JsonImportModal uploading={store.uploading} onClose={() => setJsonOpen(false)} onImport={importJson} />}
       {deleteTarget && <DeleteModal question={deleteTarget} saving={store.saving} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete} />}
     </main>
   );

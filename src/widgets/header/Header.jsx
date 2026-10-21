@@ -8,10 +8,8 @@ const navItems = [
   { path: "/admin/dashboard", label: "Главная" },
   { path: "/admin/questions", label: "Вопросы" },
   { path: "/admin/resalt", label: "Результаты" },
-  { path: "/admin/leaderboard", label: "Рейтинг" },
-  { path: "/admin/teachers", label: "Преподаватели" },
-  { path: "/admin/teachers-leaderboard", label: "Рейтинг учителей" },
-  { path: "/admin/add-question", label: "Добавить вопрос c JSON" },
+  { path: "/admin/users", label: "Мониторинг пользователей" },
+  { path: "/admin/teachers", label: "Мониторинг учителей" },
 ];
 
 export function Header() {
@@ -46,7 +44,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           <Link to="/admin/dashboard" className="admin-brand-link"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></Link>
 
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden xl:flex items-center gap-5">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -64,7 +62,7 @@ export function Header() {
             
           </nav>
 
-          <div className="hidden md:flex items-center gap-4">
+          <div className="hidden xl:flex items-center gap-4">
             {isLoggedIn ? (
               <>
                 <div className="flex items-center gap-2">
@@ -72,7 +70,7 @@ export function Header() {
                     T
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-sm text-slate-700 font-medium">Преподаватель</span>
+                    <span className="text-sm text-slate-700 font-medium">Администратор</span>
                     <span className="text-xs text-slate-500">Активен</span>
                   </div>
                 </div>
@@ -104,7 +102,7 @@ export function Header() {
           </div>
 
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-slate-50 transition-colors"
+            className="xl:hidden p-2 rounded-lg hover:bg-slate-50 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
             aria-expanded={menuOpen}
@@ -118,7 +116,7 @@ export function Header() {
         </div>
 
         {menuOpen && (
-          <div className="md:hidden border-t border-blue-100 py-4 animate-fade-in">
+          <div className="xl:hidden border-t border-blue-100 py-4 animate-fade-in">
             <div className="space-y-1">
               {navItems.map((item) => (
                 <Link

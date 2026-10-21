@@ -1,11 +1,14 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { axiosAdmin } from "@/shared/lib/api/axiosAdmin";
 import { KeyRound, PencilLine, Trash2, X, UserPlus, Plus } from "lucide-react";
+import { AdminEmptyState, AdminMetric, AdminPageHeader } from "@/pages/admin/shared/AdminPanels";
 
 export function TeachersPage() {
   const [teachers, setTeachers] = useState([]);
   const [users, setUsers] = useState([]);
   const [teachersLoading, setTeachersLoading] = useState(false);
+  const [ranking, setRanking] = useState([]);
+  const [rankingError, setRankingError] = useState("");
   const [usersLoading, setUsersLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -33,11 +36,16 @@ export function TeachersPage() {
   const loadTeachers = async () => {
     setTeachersLoading(true);
     setError("");
+    setRankingError("");
     try {
-      const response = await axiosAdmin.get("/teachers/get");
-      setTeachers(response.data?.teachers || []);
-    } catch (err) {
-      setError(getErrorMessage(err, "Не удалось загрузить преподавателей"));
+      const [teachersResponse, rankingResponse] = await Promise.allSettled([
+        axiosAdmin.get("/teachers/get"),
+        axiosAdmin.get("/teachers/leaderboard"),
+      ]);
+      if (teachersResponse.status === "fulfilled") setTeachers(teachersResponse.value.data?.teachers || []);
+      else setError(getErrorMessage(teachersResponse.reason, "Не удалось загрузить преподавателей"));
+      if (rankingResponse.status === "fulfilled") setRanking(rankingResponse.value.data?.teachers || []);
+      else setRankingError(getErrorMessage(rankingResponse.reason, "Не удалось загрузить рейтинг"));
     } finally {
       setTeachersLoading(false);
     }
@@ -264,15 +272,9 @@ export function TeachersPage() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <div className="max-w-6xl mx-auto px-6 py-12 space-y-8">
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-black text-slate-800">Преподаватели</h1>
-              <p className="text-sm text-slate-400">
-                На главной странице отображаются только преподаватели
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
+        <div>
+          <AdminPageHeader eyebrow="Администрирование" title="Мониторинг учителей" description="Результаты учеников, рейтинг и управление преподавателями." actions={
+            <>
               <button
                 onClick={openUsersModal}
                 className="inline-flex items-center gap-2 bg-emerald-600 text-white rounded-2xl px-4 py-2 font-bold text-sm hover:bg-emerald-700 transition-all"
@@ -287,8 +289,8 @@ export function TeachersPage() {
                 <Plus size={16} />
                 Создать преподавателя
               </button>
-            </div>
-          </div>
+            </>
+          } />
           {error && (
             <div className="mt-4 text-xs font-bold text-red-500 bg-red-50 px-4 py-2 rounded-xl">
               {error}
@@ -296,6 +298,29 @@ export function TeachersPage() {
           )}
           {notice && <div className="mt-4 text-sm font-semibold text-emerald-800 bg-emerald-50 px-4 py-3 rounded-xl" role="status">{notice}</div>}
         </div>
+
+        <section className="space-y-4" aria-label="Рейтинг преподавателей">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <AdminMetric label="Преподаватели" value={teachers.length} />
+            <AdminMetric label="Проведено тестов" value={ranking.reduce((sum, teacher) => sum + (Number(teacher.testsCount) || 0), 0)} />
+            <AdminMetric label="Участий учеников" value={ranking.reduce((sum, teacher) => sum + (Number(teacher.studentsCount) || 0), 0)} />
+          </div>
+          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white">
+            <div className="border-b border-slate-100 p-6 md:px-8"><h2 className="text-lg font-black text-slate-900">Рейтинг учителей</h2><p className="mt-1 text-sm text-slate-500">Средний результат учеников по завершённым тестам</p></div>
+            {teachersLoading ? <div className="p-10 text-center text-sm text-slate-500">Загрузка рейтинга…</div> : rankingError ? <p role="alert" className="p-6 text-sm font-semibold text-red-700">{rankingError}</p> : ranking.length === 0 ? <AdminEmptyState title="Пока нет результатов" description="Рейтинг появится после прохождения тестов." /> : (
+              <div className="divide-y divide-slate-100">
+                {ranking.map((teacher, index) => (
+                  <div key={teacher._id || teacher.id} className="grid gap-3 px-6 py-4 sm:grid-cols-[minmax(0,1fr)_120px_130px_110px] sm:items-center md:px-8">
+                    <div className="flex min-w-0 items-center gap-3"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-50 font-mono font-black text-blue-700">{index + 1}</span><div className="min-w-0"><p className="truncate font-bold text-slate-900">{teacher.name || teacher.username || "Без имени"}</p><p className="truncate text-xs text-slate-500">{teacher.email || ""}</p></div></div>
+                    <div><p className="text-xs text-slate-400">Тестов</p><p className="font-mono font-bold text-slate-800">{teacher.testsCount || 0}</p></div>
+                    <div><p className="text-xs text-slate-400">Учеников</p><p className="font-mono font-bold text-slate-800">{teacher.studentsCount || 0}</p></div>
+                    <div><p className="text-xs text-slate-400">Средний балл</p><p className="font-mono text-lg font-black text-blue-700">{(Number(teacher.rating) || 0).toFixed(1).replace(".", ",")}%</p></div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
 
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="p-6 md:p-8 border-b border-slate-100 flex items-center justify-between">

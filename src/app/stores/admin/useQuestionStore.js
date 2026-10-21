@@ -79,6 +79,20 @@ export const useQuestionStore = create((set, get) => ({
         }
     },
 
+    importJson: async (questions) => {
+        try {
+            set({ uploading: true, error: null });
+            const response = await axiosAdmin.post('/questions/import-json', { questions });
+            await get().fetchQuestions({ page: 1, category: '', difficulty: '', search: '' });
+            set({ uploading: false });
+            return response.data;
+        } catch (error) {
+            const message = errorMessage(error, 'Не удалось импортировать JSON');
+            set({ uploading: false, error: message });
+            throw new Error(message);
+        }
+    },
+
     createQuestion: async (payload) => {
         try {
             set({ saving: true, error: null });

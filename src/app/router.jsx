@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import UserLayout from "@/widgets/layout/UserLayout";
 import ProtectedRoute from "@/widgets/layout/ProtectedRoute";
 import ProfileLayout from "@/widgets/layout/ProfileLayout";
@@ -26,8 +26,7 @@ const TestMonitorPage = lazy(() => import("@/pages/admin/test-monitor/TestMonito
 const Result = lazy(() => import("@/pages/admin/result/Result"));
 const QuestionsPage = lazy(() => import("@/pages/admin/question/Qestion").then((m) => ({ default: m.QuestionsPage })));
 const TeachersPage = lazy(() => import("@/pages/admin/teachers/Teachers").then((m) => ({ default: m.TeachersPage })));
-const TeachersLeaderboardPage = lazy(() => import("@/pages/admin/teachers/TeachersLeaderboardPage").then((m) => ({ default: m.TeachersLeaderboardPage })));
-const AddQuestion = lazy(() => import("@/pages/admin/add-question/AddQuestion").then((m) => ({ default: m.AddQuestion })));
+const UsersMonitoringPage = lazy(() => import("@/pages/admin/users/UsersMonitoringPage"));
 const ROP_CATEGORY = "\u0420\u041e\u041f";
 
 export const router = createBrowserRouter([
@@ -64,10 +63,11 @@ export const router = createBrowserRouter([
     { path: "test-monitor/:id", element: <TestMonitorPage /> },
     { path: "resalt", element: <Result /> },
     { path: "questions", element: <QuestionsPage /> },
-    { path: "leaderboard", element: <Lider /> },
+    { path: "leaderboard", element: <Navigate to="/admin/users" replace /> },
+    { path: "users", element: <UsersMonitoringPage /> },
     { path: "teachers", element: <TeachersPage /> },
-    { path: "teachers-leaderboard", element: <TeachersLeaderboardPage /> },
-    { path: "add-question", element: <AddQuestion /> },
+    { path: "teachers-leaderboard", element: <Navigate to="/admin/teachers" replace /> },
+    { path: "add-question", element: <Navigate to="/admin/questions" replace /> },
   ] },
   { path: "*", element: <NotFound /> },
 ]);
