@@ -10,7 +10,7 @@ import {
   XCircle,
   AlertCircle
 } from "lucide-react";
-import { useQuestionStore } from "@/app/stores/admin/useQuestionStore";
+import { axiosUser } from "@/shared/lib/api/axiosUser";
 import FocusGuard from "@/shared/lib/focusGuard/FocusGuard";
 import Swal from "sweetalert2";
 
@@ -27,9 +27,8 @@ export const PracticeTestPage = () => {
   const navigate = useNavigate();
   const { type } = useParams();
 
-  const { questions, fetchQuestions, loading: questionsLoading } = useQuestionStore();
-
   const [testQuestions, setTestQuestions] = useState([]);
+  const [questionsLoading, setQuestionsLoading] = useState(true);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(1200);
@@ -37,44 +36,38 @@ export const PracticeTestPage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     const loadQuestions = async () => {
+      setQuestionsLoading(true);
+      setError(null);
+      setTestQuestions([]);
+      setCurrentQuestionIndex(0);
+      setAnswers({});
+      setIsFinished(false);
       try {
-        await fetchQuestions({ limit: 9999 });
+        const frontCategories = ["html", "javascript", "react", "typescript", "mixed"];
+        const backCategories = ["Django", "python", "backend", "Spring", "Java основы", "Java продвинутый", "Основа", "Продвинутый"];
+        const categories = type === "front" ? frontCategories : type === "back" ? backCategories : [type];
+        const response = await axiosUser.get("/questions/practice", {
+          params: { categories: categories.join(",") },
+          signal: controller.signal,
+        });
+        const selected = shuffleArray(response.data?.questions || []);
+        if (selected.length === 0) {
+          setError(`Вопросы по категории "${type}" не найдены`);
+        } else {
+          setTestQuestions(selected);
+          setTimeLeft(selected.length * 60);
+        }
       } catch (err) {
-        setError("Ошибка загрузки вопросов");
+        if (!controller.signal.aborted) setError("Ошибка загрузки вопросов. Попробуйте ещё раз.");
+      } finally {
+        if (!controller.signal.aborted) setQuestionsLoading(false);
       }
     };
     loadQuestions();
-  }, [fetchQuestions]);
-
-  useEffect(() => {
-    if (questions.length === 0 || questionsLoading) return;
-
-    const frontCategories = ["html", "javascript", "react", "typescript", "mixed"];
-    const backCategories = ["Django", "python", "backend", "Spring", "Java основы", "Java продвинутый", "Основа", "Продвинутый"];
-    const javaCategories = ["Java основы", "Java продвинутый", "Spring"];
-
-    let filtered;
-
-    if (type === "front") {
-      filtered = questions.filter(q => frontCategories.some(cat => cat.toLowerCase() === q.category.toLowerCase()));
-    } else if (type === "back") {
-      filtered = questions.filter(q => backCategories.some(cat => cat.toLowerCase() === q.category.toLowerCase()));
-    } else {
-      filtered = questions.filter(q => q.category.toLowerCase() === type.toLowerCase());
-    }
-
-    if (filtered.length === 0) {
-      setError(`Вопросы по категории "${type}" не найдены`);
-      return;
-    }
-
-    const countToTake = Math.min(filtered.length, 20);
-    const shuffled = shuffleArray(filtered).slice(0, countToTake);
-
-    setTestQuestions(shuffled);
-    setTimeLeft(shuffled.length * 60);
-  }, [questions, questionsLoading, type]);
+    return () => controller.abort();
+  }, [type]);
 
   useEffect(() => {
     if (isFinished || testQuestions.length === 0) return;
