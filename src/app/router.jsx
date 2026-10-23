@@ -27,6 +27,7 @@ const Result = lazy(() => import("@/pages/admin/result/Result"));
 const QuestionsPage = lazy(() => import("@/pages/admin/question/Qestion").then((m) => ({ default: m.QuestionsPage })));
 const TeachersPage = lazy(() => import("@/pages/admin/teachers/Teachers").then((m) => ({ default: m.TeachersPage })));
 const UsersMonitoringPage = lazy(() => import("@/pages/admin/users/UsersMonitoringPage"));
+const PendingAuthPage = lazy(() => import("@/pages/admin/pending-auth/PendingAuthPage"));
 const ROP_CATEGORY = "\u0420\u041e\u041f";
 
 export const router = createBrowserRouter([
@@ -65,6 +66,7 @@ export const router = createBrowserRouter([
     { path: "questions", element: <QuestionsPage /> },
     { path: "leaderboard", element: <Navigate to="/admin/users" replace /> },
     { path: "users", element: <UsersMonitoringPage /> },
+    { path: "pending-auth", element: <PendingAuthPage /> },
     { path: "teachers", element: <TeachersPage /> },
     { path: "teachers-leaderboard", element: <Navigate to="/admin/teachers" replace /> },
     { path: "add-question", element: <Navigate to="/admin/questions" replace /> },

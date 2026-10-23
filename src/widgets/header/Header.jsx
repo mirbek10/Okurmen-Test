@@ -9,6 +9,7 @@ const navItems = [
   { path: "/admin/questions", label: "Вопросы" },
   { path: "/admin/resalt", label: "Результаты" },
   { path: "/admin/users", label: "Мониторинг пользователей" },
+  { path: "/admin/pending-auth", label: "Ожидающие заявки" },
   { path: "/admin/teachers", label: "Мониторинг учителей" },
 ];
 
@@ -44,7 +45,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           <Link to="/admin/dashboard" className="admin-brand-link"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></Link>
 
-          <nav className="hidden xl:flex items-center gap-5">
+          <nav className="hidden 2xl:flex items-center gap-5">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -62,7 +63,7 @@ export function Header() {
             
           </nav>
 
-          <div className="hidden xl:flex items-center gap-4">
+          <div className="hidden 2xl:flex items-center gap-4">
             {isLoggedIn ? (
               <>
                 <div className="flex items-center gap-2">
@@ -102,7 +103,7 @@ export function Header() {
           </div>
 
           <button
-            className="xl:hidden p-2 rounded-lg hover:bg-slate-50 transition-colors"
+            className="2xl:hidden p-2 rounded-lg hover:bg-slate-50 transition-colors"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
             aria-expanded={menuOpen}
@@ -116,7 +117,7 @@ export function Header() {
         </div>
 
         {menuOpen && (
-          <div className="xl:hidden border-t border-blue-100 py-4 animate-fade-in">
+          <div className="2xl:hidden border-t border-blue-100 py-4 animate-fade-in">
             <div className="space-y-1">
               {navItems.map((item) => (
                 <Link
