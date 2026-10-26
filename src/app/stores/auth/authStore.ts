@@ -52,8 +52,9 @@ interface AuthState {
     error: string | null;
     response: any;
 
-    register: (username: string, email: string, password: string) => Promise<{ email: string; expiresAt: string }>;
+    register: (username: string, email: string, password: string) => Promise<{ email: string; expiresAt: string; adminApprovalToken?: string }>;
     verifyRegistration: (email: string, code: string) => Promise<User | null>;
+    checkAdminRegistrationApproval: (token: string) => Promise<User | null>;
     login: (identifier: string, password: string) => Promise<User | null>;
     logout: () => void;
     clearError: () => void;
@@ -79,7 +80,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             });
 
             set({ loading: false });
-            return { email: response.data.email, expiresAt: response.data.expiresAt };
+            return { email: response.data.email, expiresAt: response.data.expiresAt, adminApprovalToken: response.data.adminApprovalToken };
         } catch (error: any) {
             set({
                 error: error.response?.data?.error || error.response?.data?.message || error.message || 'Registration failed',
@@ -102,6 +103,18 @@ export const useAuthStore = create<AuthState>((set) => ({
                 loading: false
             });
             throw error;
+        }
+    },
+
+    checkAdminRegistrationApproval: async (token) => {
+        try {
+            const response = await axiosUser.post('/auth/registration-admin-login', { token });
+            if (response.status === 202 || !response.data?.token) return null;
+            set({ user: response.data.user || null, token: response.data.token, loading: false, error: null });
+            Cookies.set('userToken', response.data.token, { expires: 7 });
+            return response.data.user || null;
+        } catch {
+            return null;
         }
     },
 

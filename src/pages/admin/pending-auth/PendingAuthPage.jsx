@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Clock3, Mail, Pencil, Plus, RefreshCw, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { Check, Clock3, Mail, Pencil, Plus, RefreshCw, RotateCcw, Search, Trash2, X } from "lucide-react";
 import { axiosAdmin } from "@/shared/lib/api/axiosAdmin";
 import { AdminEmptyState, AdminMetric, AdminPageHeader } from "@/pages/admin/shared/AdminPanels";
 
@@ -115,6 +115,12 @@ export default function PendingAuthPage() {
     item._id
   );
 
+  const confirmRegistration = (item) => mutate(
+    () => axiosAdmin.post(`/admin/pending-auth/registrations/${item._id}/confirm`),
+    `Регистрация ${item.email} подтверждена.`,
+    item._id
+  );
+
   const activeRegistrations = registrations.filter((item) => new Date(item.expiresAt).getTime() > now).length;
   const activeResets = resets.filter((item) => new Date(item.expiresAt).getTime() > now).length;
 
@@ -150,12 +156,14 @@ export default function PendingAuthPage() {
           {visible.map((item) => {
             const status = statusOf(item, now);
             const remaining = Math.max(0, Math.ceil((new Date(item.expiresAt).getTime() - now) / 60000));
-            return <div key={item._id} className="grid gap-4 px-5 py-5 xl:grid-cols-[minmax(220px,1.4fr)_minmax(160px,1fr)_minmax(130px,.8fr)_auto] xl:items-center md:px-6">
+            return <div key={item._id} className="grid gap-4 px-5 py-5 xl:grid-cols-[minmax(190px,1.2fr)_minmax(130px,.8fr)_minmax(145px,.9fr)_minmax(130px,.8fr)_auto] xl:items-center md:px-6">
               <div className="min-w-0"><p className="truncate font-bold text-slate-900">{tab === "registrations" ? item.username : item.email}</p><p className="truncate text-sm text-slate-500">{tab === "registrations" ? item.email : "Сброс пароля"}</p></div>
               <div><span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${status.color}`}>{status.label}</span>{tab === "registrations" && <p className="mt-1 text-xs text-slate-500">Попыток ввода: {item.attempts || 0} / 5</p>}</div>
+              {tab === "registrations" && <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2"><p className="text-[11px] font-bold uppercase tracking-wide text-blue-700">Код из письма</p><p className="font-mono text-lg font-black tracking-[0.2em] text-blue-950">{item.code || "Нет кода — отправьте повторно"}</p></div>}
               <div className="text-xs text-slate-500"><p className="flex items-center gap-1.5"><Clock3 size={14} /> {remaining ? `Ещё ${remaining} мин` : "Время вышло"}</p><p className="mt-1">До {dateTime(item.expiresAt)}</p></div>
               <div className="flex flex-wrap gap-2 xl:justify-end">
                 {tab === "registrations" && <button type="button" onClick={() => openModal("edit-registration", item)} disabled={busy || remaining === 0} className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:border-blue-300 disabled:opacity-40"><Pencil size={15} /> Имя</button>}
+                {tab === "registrations" && <button type="button" onClick={() => confirmRegistration(item)} disabled={busy || remaining === 0} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 disabled:opacity-40"><Check size={15} /> Подтвердить</button>}
                 <button type="button" onClick={() => resend(item)} disabled={busy} className="inline-flex items-center gap-1.5 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-40">{tab === "registrations" ? <Mail size={15} /> : <RotateCcw size={15} />}{actionId === item._id ? "Отправка…" : "Повторить"}</button>
                 <button type="button" onClick={() => openModal(tab === "registrations" ? "delete-registration" : "delete-reset", item)} disabled={busy} className="inline-flex items-center gap-1.5 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-100 disabled:opacity-40"><Trash2 size={15} /> Удалить</button>
               </div>

@@ -30,7 +30,7 @@ export default function Login() {
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState("");
-  const { user, login, register, verifyRegistration, loading, error, clearError, fetchUserProfile } = useAuthStore();
+  const { user, login, register, verifyRegistration, checkAdminRegistrationApproval, loading, error, clearError, fetchUserProfile } = useAuthStore();
   const { login: adminLogin, loading: adminLoading, error: adminError, admin, clearError: clearAdminError } = useAdminLoginStore();
 
   useEffect(() => {
@@ -46,6 +46,30 @@ export default function Login() {
     const timer = setInterval(update, 1000);
     return () => clearInterval(timer);
   }, [pending, mode]);
+
+  useEffect(() => {
+    if (!pending?.adminApprovalToken || mode !== "verify") return;
+    let cancelled = false;
+    let timer;
+    const stopAt = new Date(pending.expiresAt).getTime() + 15 * 60 * 1000;
+    const poll = async () => {
+      if (Date.now() > stopAt) return;
+      const approvedUser = await checkAdminRegistrationApproval(pending.adminApprovalToken);
+      if (cancelled) return;
+      if (approvedUser) {
+        sessionStorage.removeItem(PENDING_KEY);
+        setPending(null);
+        navigate("/user/profile", { replace: true });
+        return;
+      }
+      timer = setTimeout(poll, 2500);
+    };
+    poll();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [pending, mode, checkAdminRegistrationApproval, navigate]);
 
   useEffect(() => {
     if (user) navigate("/user/profile", { replace: true });
@@ -148,6 +172,7 @@ export default function Login() {
               <label htmlFor="auth-code">Код из письма</label>
               <input id="auth-code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(event) => { setCode(event.target.value.replace(/\D/g, "")); setFormError(""); clearError(); }} placeholder="000000" disabled={busy || secondsLeft <= 0} required />
               <p className="field-hint">Код действителен ещё {timeLabel}</p>
+              {pending?.adminApprovalToken && <p className="field-hint" role="status">После подтверждения администратором вы войдёте автоматически.</p>}
             </> : <>
               {mode === "register" ? <>
                 <label htmlFor="auth-name">Ваше имя</label>
