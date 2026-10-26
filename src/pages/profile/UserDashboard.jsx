@@ -9,6 +9,7 @@ import {
   Trophy,
 } from "lucide-react";
 import { useAuthStore } from "@/app/stores/auth/authStore";
+import { axiosUser } from "@/shared/lib/api/axiosUser";
 
 function getHistory() {
   try {
@@ -22,12 +23,36 @@ function getHistory() {
 export function UserDashboard() {
   const { user } = useAuthStore();
   const [history, setHistory] = useState(getHistory);
+  const [activeJoin, setActiveJoin] = useState(null);
 
   const firstName = (user?.username || user?.name || "Ученик").split(" ")[0];
   const latest = [...history].reverse().slice(0, 3);
   const completed = user?.testsCompleted ?? user?.testFinished ?? 0;
 
-  useEffect(() => setHistory(getHistory()), []);
+  useEffect(() => {
+    setHistory(getHistory());
+    try {
+      const participant = JSON.parse(localStorage.getItem("user") || "null");
+      const code = localStorage.getItem("code");
+      if (!participant?.studentId || !code) return;
+      axiosUser.get(`/student/status/${encodeURIComponent(code)}/${participant.studentId}`)
+        .then((response) => {
+          const status = response.data?.student?.status;
+          if (status === "waiting" || status === "active") setActiveJoin({ participant, code, status });
+          else {
+            localStorage.removeItem("user");
+            localStorage.removeItem("code");
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem("user");
+          localStorage.removeItem("code");
+        });
+    } catch {
+      localStorage.removeItem("user");
+      localStorage.removeItem("code");
+    }
+  }, []);
 
   return (
     <div className="dashboard">
@@ -52,6 +77,14 @@ export function UserDashboard() {
           <ArrowRight className="action-arrow" size={22} />
         </Link>
       </section>
+
+      {activeJoin && <section className="dashboard-history" aria-label="Текущий тест">
+        <div className="section-heading">
+          <div><span className="section-kicker">Тест преподавателя</span><h2>Вы уже подключены</h2></div>
+          <Link className="text-link" to={activeJoin.participant.category === "РОП" ? "/rop-waiting" : "/student-waiting-list"}>Вернуться к ожиданию <ArrowRight size={17} /></Link>
+        </div>
+        <p>{activeJoin.participant.name || user?.username || "Участник"} уже записан на тест по коду {activeJoin.code}. Повторный вход не создаст вторую запись.</p>
+      </section>}
 
       <section className="dashboard-overview" aria-label="Краткая статистика">
         <div className="overview-item"><span><BookOpen size={18} /> Пройдено тестов</span><strong>{completed}</strong></div>

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Clock3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { CheckCircle2, Clock3 } from "lucide-react";
 import { useUserGetStatus } from "@/app/stores/user/userGetStatus";
 import { useAuthStore } from "@/app/stores/auth/authStore";
 
@@ -46,11 +46,5 @@ export function WaitingList({ entryPath = "/join-test" } = {}) {
     }
   }, [error, navigate, entryPath]);
 
-  const leave = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("code");
-    navigate(entryPath, { replace: true });
-  };
-
-  return <div className="waiting-page"><div className="waiting-wrap"><Link className="text-link" to={entryPath === "/rop-code" ? "/" : "/user/profile"}><ArrowLeft size={17} /> В кабинет</Link><div className="waiting-card"><span className="section-kicker">Тест преподавателя</span><span className="waiting-icon">{started ? <CheckCircle2 size={27} /> : <Clock3 size={27} />}</span><h1>{started ? "Тест начался" : "Вы подключены"}</h1><p>{started ? "Открываем вопросы..." : "Преподаватель запустит тест. Страница обновит статус автоматически."}</p><div className="waiting-details"><div><small>Участник</small><strong>{user?.student?.name || account?.username || account?.name || "Ученик"}</strong></div><div><small>Код теста</small><strong>{credentials?.code || "—"}</strong></div></div>{error && <p className="form-error" role="alert">Не удалось обновить статус: {error}</p>}<div className="waiting-status"><span className="waiting-dot" /> {started ? "Подготовка вопросов" : "Ожидаем преподавателя"}</div><button type="button" className="waiting-leave" onClick={leave}>Покинуть ожидание</button></div></div></div>;
+  return <div className="waiting-page"><div className="waiting-wrap"><div className="waiting-card"><span className="section-kicker">Тест преподавателя</span><span className="waiting-icon">{started ? <CheckCircle2 size={27} /> : <Clock3 size={27} />}</span><h1>{started ? "Тест начался" : "Вы подключены"}</h1><p>{started ? "Открываем вопросы..." : "Преподаватель запустит тест. Страница обновит статус автоматически. Не закрывайте ожидание."}</p><div className="waiting-details"><div><small>Участник</small><strong>{user?.student?.name || account?.username || account?.name || "Ученик"}</strong></div><div><small>Код теста</small><strong>{credentials?.code || "—"}</strong></div></div>{error && <p className="form-error" role="alert">Не удалось обновить статус: {error}</p>}<div className="waiting-status"><span className="waiting-dot" /> {started ? "Подготовка вопросов" : "Ожидаем преподавателя"}</div></div></div></div>;
 }

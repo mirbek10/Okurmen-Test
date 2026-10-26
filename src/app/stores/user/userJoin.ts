@@ -6,7 +6,7 @@ interface userJoinState {
     loading: boolean;
     error: string | null;
     user: any;
-    join: (name: string, code: string, email: string, requiredCategory?: string) => Promise<any>;
+    join: (name: string, code: string, email: string, requiredCategory?: string, participantKey?: string) => Promise<any>;
     clearError: () => void;
     logout: () => void;
 }
@@ -16,10 +16,10 @@ export const useUserJoinStore = create<userJoinState>((set, get) => ({
     error: null,
     user: null,
     clearError: () => set({ error: null }),
-    join: async (name: string, code: string, email: string, requiredCategory?: string) => {
+    join: async (name: string, code: string, email: string, requiredCategory?: string, participantKey?: string) => {
         try {
             set({ loading: true, error: null });
-            const response = await axiosUser.post('/test/join', { name, code, email, requiredCategory });
+            const response = await axiosUser.post('/test/join', { name, code, email, requiredCategory, participantKey });
             const user = response.data;
             Cookies.set("user", user)
             set({ user });
