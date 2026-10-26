@@ -1,5 +1,5 @@
 ﻿import { create } from "zustand";
-import { axiosAdmin } from "../../../shared/lib/api/axiosAdmin";
+import { axiosUser } from "../../../shared/lib/api/axiosUser";
 
 export const useTestCategoryStore = create((set) => ({
     testCategories: [],
@@ -10,7 +10,7 @@ export const useTestCategoryStore = create((set) => ({
         try {
             set({ loading: true, error: null });
 
-            const response = await axiosAdmin.get("questions/getCategory");
+            const response = await axiosUser.get("questions/getCategory");
             set({
                 testCategories: response.data,
                 loading: false

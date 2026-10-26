@@ -47,7 +47,9 @@ export const router = createBrowserRouter([
     { path: "/join-test", element: <JoinTest /> },
     { path: "/student-waiting-list", element: <WaitingList /> },
     { path: "/student-test/:id", element: <StudentTestPage /> },
+    { path: "/practice-test", element: <PracticeTestPage /> },
     { path: "/practice-test/:type", element: <PracticeTestPage /> },
+    { path: "/practice-test/*", element: <PracticeTestPage /> },
     { path: "/user", element: <ProfileLayout />, children: [
       { path: "profile", element: <UserDashboard /> },
       { path: "account", element: <AccountPage /> },

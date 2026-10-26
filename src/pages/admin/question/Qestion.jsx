@@ -9,6 +9,7 @@ import {
   FileUp,
   Filter,
   LockKeyhole,
+  Layers3,
   Loader2,
   Plus,
   Pencil,
@@ -244,6 +245,36 @@ function RenameCategoryModal({ category, saving, onClose, onSave }) {
   );
 }
 
+function CategoryParentModal({ category, parentCategory, saving, onClose, onSave }) {
+  const [name, setName] = useState(parentCategory || "Другие");
+  const [error, setError] = useState("");
+  const submit = async (event) => {
+    event.preventDefault();
+    const nextName = name.trim();
+    if (!nextName) return setError("Введите название направления.");
+    setError("");
+    try {
+      await onSave(nextName);
+    } catch (saveError) {
+      setError(saveError.message);
+    }
+  };
+
+  return <ModalShell title="Изменить направление" description={`Укажите родительское направление для категории «${category}».`} onClose={onClose} width="max-w-xl">
+    <form onSubmit={submit} className="space-y-5 p-5 md:p-7">
+      <label className="grid gap-2 text-sm font-bold text-slate-700">
+        Направление
+        <input value={name} onChange={(event) => setName(event.target.value)} maxLength={80} autoFocus className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="Например, Frontend" />
+      </label>
+      {error && <p role="alert" className="text-sm font-semibold text-red-600">{error}</p>}
+      <div className="flex justify-end gap-3">
+        <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600">Отмена</button>
+        <button type="submit" disabled={saving} className="rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white disabled:opacity-60">{saving ? "Сохранение…" : "Сохранить"}</button>
+      </div>
+    </form>
+  </ModalShell>;
+}
+
 function UploadModal({ uploading, onClose, onUpload }) {
   const [file, setFile] = useState(null);
   const [uploadError, setUploadError] = useState("");
@@ -383,6 +414,7 @@ export const QuestionsPage = () => {
   const [jsonOpen, setJsonOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [renameCategoryTarget, setRenameCategoryTarget] = useState(null);
+  const [parentCategoryTarget, setParentCategoryTarget] = useState(null);
 
   useEffect(() => {
     fetchQuestions({ page: 1 });
@@ -441,6 +473,13 @@ export const QuestionsPage = () => {
     setRenameCategoryTarget(null);
   };
 
+  const saveCategoryParent = async (parentCategory) => {
+    await store.updateCategoryParent(parentCategoryTarget.category, parentCategory);
+    await fetchTestCategories();
+    toast.success(`Категория «${parentCategoryTarget.category}» перемещена в «${parentCategory}».`);
+    setParentCategoryTarget(null);
+  };
+
   return (
     <main className="min-h-[100dvh] bg-slate-50 px-4 py-6 text-slate-900 md:px-8 md:py-9">
       <div className="mx-auto max-w-[1400px]">
@@ -478,6 +517,7 @@ export const QuestionsPage = () => {
             </button>
             {categories.map((category) => {
               const count = store.categoryStats.find((item) => item.category === category)?.count || 0;
+              const trainingCategory = testCategories.find((item) => item.category === category);
               const isSelected = store.category === category;
               return (
                 <div key={category} className={`relative min-w-40 snap-start rounded-2xl border transition ${isSelected ? "border-blue-700 bg-blue-700 text-white" : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50"}`}>
@@ -502,6 +542,17 @@ export const QuestionsPage = () => {
                       className={`absolute right-2 top-2 rounded-lg p-1.5 transition ${isSelected ? "text-white/80 hover:bg-white/15 hover:text-white" : "text-slate-400 hover:bg-blue-100 hover:text-blue-700"}`}
                     >
                       <Pencil size={15} />
+                    </button>
+                  )}
+                  {trainingCategory && (
+                    <button
+                      type="button"
+                      onClick={() => setParentCategoryTarget({ category, parentCategory: trainingCategory.parentCategory || "Другие" })}
+                      title={`Изменить направление категории ${category}`}
+                      aria-label={`Изменить направление категории ${category}`}
+                      className={`absolute right-9 top-2 rounded-lg p-1.5 transition ${isSelected ? "text-white/80 hover:bg-white/15 hover:text-white" : "text-slate-400 hover:bg-blue-100 hover:text-blue-700"}`}
+                    >
+                      <Layers3 size={15} />
                     </button>
                   )}
                 </div>
@@ -560,6 +611,7 @@ export const QuestionsPage = () => {
 
       {editorOpen && <QuestionModal initialQuestion={editorQuestion} categories={categories} saving={store.saving} onClose={() => setEditorOpen(false)} onSave={saveQuestion} />}
       {renameCategoryTarget && <RenameCategoryModal category={renameCategoryTarget} saving={store.saving} onClose={() => setRenameCategoryTarget(null)} onSave={saveCategoryName} />}
+      {parentCategoryTarget && <CategoryParentModal category={parentCategoryTarget.category} parentCategory={parentCategoryTarget.parentCategory} saving={store.saving} onClose={() => setParentCategoryTarget(null)} onSave={saveCategoryParent} />}
       {uploadOpen && <UploadModal uploading={store.uploading} onClose={() => setUploadOpen(false)} onUpload={uploadFile} />}
       {jsonOpen && <JsonImportModal uploading={store.uploading} onClose={() => setJsonOpen(false)} onImport={importJson} />}
       {deleteTarget && <DeleteModal question={deleteTarget} saving={store.saving} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete} />}

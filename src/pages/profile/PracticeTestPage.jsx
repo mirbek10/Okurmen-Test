@@ -1,6 +1,6 @@
 ﻿"use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ChevronLeft,
   ChevronRight,
@@ -25,8 +25,16 @@ const shuffleArray = (array) => {
 
 export const PracticeTestPage = () => {
   const navigate = useNavigate();
-  const { type } = useParams();
-  const category = String(type || "").toLocaleLowerCase("ru-RU") === "html" ? "html/css" : type;
+  const params = useParams();
+  const [searchParams] = useSearchParams();
+  const rawCategory = searchParams.get("category") || params.type || params["*"] || "";
+  let selectedCategory = rawCategory;
+  try {
+    selectedCategory = decodeURIComponent(rawCategory);
+  } catch {
+    // Keep the original category if an old URL contains malformed escaping.
+  }
+  const category = selectedCategory.trim();
 
   const [testQuestions, setTestQuestions] = useState([]);
   const [questionsLoading, setQuestionsLoading] = useState(true);
@@ -46,11 +54,8 @@ export const PracticeTestPage = () => {
       setAnswers({});
       setIsFinished(false);
       try {
-        const frontCategories = ["html", "javascript", "react", "typescript", "mixed"];
-        const backCategories = ["Django", "python", "backend", "Spring", "Java основы", "Java продвинутый", "Основа", "Продвинутый"];
-        const categories = category === "front" ? frontCategories : category === "back" ? backCategories : [category];
         const response = await axiosUser.get("/questions/practice", {
-          params: { categories: categories.join(",") },
+          params: { category },
           signal: controller.signal,
         });
         const selected = shuffleArray(response.data?.questions || []);
@@ -69,6 +74,63 @@ export const PracticeTestPage = () => {
     loadQuestions();
     return () => controller.abort();
   }, [category]);
+
+  const finishTest = useCallback(() => {
+    if (isFinished) return;
+
+    setIsFinished(true);
+
+    const detailedResults = testQuestions.map((q, index) => {
+      const selectedIdx = answers[index];
+      const selectedAnswer = selectedIdx !== undefined ? q.options[selectedIdx] : null;
+      const isCorrect = selectedAnswer === q.answer;
+
+      return {
+        questionNumber: index + 1,
+        question: q.question,
+        options: q.options,
+        selectedAnswer,
+        correctAnswer: q.answer,
+        isCorrect,
+        wasAnswered: selectedIdx !== undefined,
+      };
+    });
+
+    const correctCount = detailedResults.filter((result) => result.isCorrect).length;
+    const answeredCount = detailedResults.filter((result) => result.wasAnswered).length;
+    const resultData = {
+      id: Date.now(),
+      category,
+      total: testQuestions.length,
+      correct: correctCount,
+      answered: answeredCount,
+      percent: Math.round((correctCount / testQuestions.length) * 100),
+      date: new Date().toISOString(),
+      timeSpent: (testQuestions.length * 60) - timeLeft,
+      detailedResults,
+    };
+
+    const history = JSON.parse(localStorage.getItem("practice_history") || "[]");
+    localStorage.setItem("practice_history", JSON.stringify([resultData, ...history]));
+
+    Swal.fire({
+      title: "Тест завершен!",
+      html: `
+        <div class="text-left">
+          <p class="mb-2">Правильных ответов: <b>${correctCount}</b> из <b>${testQuestions.length}</b></p>
+          <p class="mb-2">Процент: <b>${resultData.percent}%</b></p>
+          <p class="mb-2">Отвечено: <b>${answeredCount}</b> из <b>${testQuestions.length}</b></p>
+          <p class="text-sm text-gray-500 mt-4">Детальные результаты сохранены в вашем профиле</p>
+        </div>
+      `,
+      icon: resultData.percent >= 70 ? "success" : "warning",
+      confirmButtonText: "Посмотреть результаты",
+      showCancelButton: true,
+      cancelButtonText: "В личный кабинет",
+    }).then((result) => {
+      navigate(result.isConfirmed ? "/user/history" : "/user/profile");
+    });
+  }, [testQuestions, answers, category, navigate, isFinished, timeLeft]);
 
   useEffect(() => {
     if (isFinished || testQuestions.length === 0) return;
@@ -89,68 +151,6 @@ export const PracticeTestPage = () => {
 
     return () => clearInterval(timerId);
   }, [timeLeft, isFinished, testQuestions.length, finishTest]);
-
-  const finishTest = useCallback(() => {
-    if (isFinished) return;
-
-    setIsFinished(true);
-
-    const detailedResults = testQuestions.map((q, index) => {
-      const selectedIdx = answers[index];
-      const selectedAnswer = selectedIdx !== undefined ? q.options[selectedIdx] : null;
-      const isCorrect = selectedAnswer === q.answer;
-
-      return {
-        questionNumber: index + 1,
-        question: q.question,
-        options: q.options,
-        selectedAnswer: selectedAnswer,
-        correctAnswer: q.answer,
-        isCorrect: isCorrect,
-        wasAnswered: selectedIdx !== undefined
-      };
-    });
-
-    const correctCount = detailedResults.filter(r => r.isCorrect).length;
-    const answeredCount = detailedResults.filter(r => r.wasAnswered).length;
-
-    const resultData = {
-      id: Date.now(),
-      category,
-      total: testQuestions.length,
-      correct: correctCount,
-      answered: answeredCount,
-      percent: Math.round((correctCount / testQuestions.length) * 100),
-      date: new Date().toISOString(),
-      timeSpent: (testQuestions.length * 60) - timeLeft,
-      detailedResults: detailedResults
-    };
-
-    const history = JSON.parse(localStorage.getItem("practice_history") || "[]");
-    localStorage.setItem("practice_history", JSON.stringify([resultData, ...history]));
-
-    Swal.fire({
-      title: "Тест завершен!",
-      html: `
-        <div class="text-left">
-          <p class="mb-2">Правильных ответов: <b>${correctCount}</b> из <b>${testQuestions.length}</b></p>
-          <p class="mb-2">Процент: <b>${resultData.percent}%</b></p>
-          <p class="mb-2">Отвечено: <b>${answeredCount}</b> из <b>${testQuestions.length}</b></p>
-          <p class="text-sm text-gray-500 mt-4">Детальные результаты сохранены в вашем профиле</p>
-        </div>
-      `,
-      icon: resultData.percent >= 70 ? "success" : "warning",
-      confirmButtonText: "Посмотреть результаты",
-      showCancelButton: true,
-      cancelButtonText: "В личный кабинет"
-    }).then((result) => {
-      if (result.isConfirmed) {
-        navigate(`/user/history`);
-      } else {
-        navigate("/user/profile");
-      }
-    });
-  }, [testQuestions, answers, category, navigate, isFinished, timeLeft]);
 
   const handleManualSubmit = async () => {
     const answeredCount = Object.keys(answers).length;

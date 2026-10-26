@@ -140,6 +140,19 @@ export const useQuestionStore = create((set, get) => ({
         }
     },
 
+    updateCategoryParent: async (category, parentCategory) => {
+        try {
+            set({ saving: true, error: null });
+            const response = await axiosAdmin.patch('/questions/categories/parent', { category, parentCategory });
+            set({ saving: false });
+            return response.data;
+        } catch (error) {
+            const message = errorMessage(error, 'Не удалось изменить направление категории');
+            set({ saving: false, error: message });
+            throw new Error(message);
+        }
+    },
+
     deleteQuestion: async (id) => {
         try {
             set({ saving: true, error: null });
