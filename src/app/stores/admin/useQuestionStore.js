@@ -119,6 +119,27 @@ export const useQuestionStore = create((set, get) => ({
         }
     },
 
+    renameCategory: async (oldCategory, newCategory) => {
+        try {
+            set({ saving: true, error: null });
+            const response = await axiosAdmin.patch('/questions/categories/rename', {
+                oldCategory,
+                newCategory,
+            });
+            const selectedCategory = get().category;
+            await get().fetchQuestions({
+                page: 1,
+                category: selectedCategory === oldCategory ? newCategory : selectedCategory,
+            });
+            set({ saving: false });
+            return response.data;
+        } catch (error) {
+            const message = errorMessage(error, 'Не удалось изменить категорию');
+            set({ saving: false, error: message });
+            throw new Error(message);
+        }
+    },
+
     deleteQuestion: async (id) => {
         try {
             set({ saving: true, error: null });

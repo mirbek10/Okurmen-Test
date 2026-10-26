@@ -10,15 +10,28 @@ import {
   X,
   Check,
   CircleX,
+  Activity,
+  Clock3,
+  ArrowRight,
+  LoaderCircle,
+  Trash2,
 } from "lucide-react";
 import { HiOutlineDotsVertical } from "react-icons/hi";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { axiosAdmin } from "@/shared/lib/api/axiosAdmin";
 
 function Result() {
   const { tests, loading, error, getTests, deleteTest } =
     useAdminGetTestStore();
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedTest, setSelectedTest] = useState(null);
+  const [activeTests, setActiveTests] = useState([]);
+  const [activeTestsOpen, setActiveTestsOpen] = useState(false);
+  const [activeTestsLoading, setActiveTestsLoading] = useState(false);
+  const [activeTestsError, setActiveTestsError] = useState("");
+  const [activeTestsNotice, setActiveTestsNotice] = useState("");
+  const [deletingActiveTestId, setDeletingActiveTestId] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     getTests();
@@ -69,6 +82,49 @@ function Result() {
     setSelectedStudent(null);
   };
 
+  const openActiveTests = async () => {
+    setActiveTestsOpen(true);
+    setActiveTestsLoading(true);
+    setActiveTestsError("");
+    setActiveTestsNotice("");
+    try {
+      const response = await axiosAdmin.get("/admin/getTest");
+      const currentTests = Array.isArray(response.data) ? response.data : [];
+      setActiveTests(currentTests.filter((test) => !test.finishedAt));
+    } catch (requestError) {
+      setActiveTestsError(
+        requestError?.response?.data?.message ||
+          "Не удалось загрузить текущие мониторинги. Попробуйте обновить список."
+      );
+    } finally {
+      setActiveTestsLoading(false);
+    }
+  };
+
+  const handleDeleteActiveTest = async (test) => {
+    const confirmed = window.confirm(
+      `Полностью удалить мониторинг «${test.category || test.code}»? Участники будут отключены, а тест не будет сохранён в результатах или базе данных.`
+    );
+    if (!confirmed) return;
+
+    setDeletingActiveTestId(test.id);
+    setActiveTestsError("");
+    setActiveTestsNotice("");
+    try {
+      await axiosAdmin.delete(`/admin/monitorings/${test.id}`);
+      setActiveTests((currentTests) =>
+        currentTests.filter((currentTest) => currentTest.id !== test.id)
+      );
+      setActiveTestsNotice("Мониторинг удалён без сохранения в результатах.");
+    } catch (requestError) {
+      setActiveTestsError(
+        requestError?.response?.data?.message || "Не удалось удалить мониторинг. Попробуйте ещё раз."
+      );
+    } finally {
+      setDeletingActiveTestId(null);
+    }
+  };
+
   if (loading && !tests) {
     return (
       <div className="flex h-screen items-center justify-center font-medium">
@@ -89,12 +145,21 @@ function Result() {
             Нажмите на студента, чтобы посмотреть детали
           </p>
         </div>
-        <button
-          onClick={() => getTests()}
-          className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-sm font-semibold"
-        >
-          Обновить данные
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={openActiveTests}
+            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+          >
+            <Activity size={18} />
+            Активные мониторинги
+          </button>
+          <button
+            onClick={() => getTests()}
+            className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-sm font-semibold"
+          >
+            Обновить данные
+          </button>
+        </div>
       </div>
 
       {/* Карточки статистики */}
@@ -334,6 +399,125 @@ function Result() {
       </div>
 
       {/* МОДАЛЬНОЕ ОКНО */}
+      {activeTestsOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <button
+            aria-label="Закрыть список мониторингов"
+            className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+            onClick={() => setActiveTestsOpen(false)}
+          />
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="active-monitorings-title"
+            className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+          >
+            <header className="flex items-start justify-between border-b border-slate-100 p-6 sm:p-7">
+              <div>
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-700">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+                  Сейчас доступны
+                </div>
+                <h2 id="active-monitorings-title" className="text-2xl font-extrabold text-slate-900">
+                  Активные мониторинги
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Выберите тест, чтобы открыть его мониторинг.
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveTestsOpen(false)}
+                className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                aria-label="Закрыть"
+              >
+                <X size={22} />
+              </button>
+            </header>
+
+            <div className="space-y-3 overflow-y-auto p-5 sm:p-6">
+              {activeTestsNotice && (
+                <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+                  {activeTestsNotice}
+                </div>
+              )}
+              {activeTestsLoading ? (
+                <div className="flex items-center justify-center gap-3 py-14 text-slate-500">
+                  <LoaderCircle className="animate-spin" size={20} />
+                  Загружаем мониторинги...
+                </div>
+              ) : activeTestsError ? (
+                <div className="rounded-2xl border border-red-100 bg-red-50 p-5 text-sm text-red-700">
+                  <p>{activeTestsError}</p>
+                  <button onClick={openActiveTests} className="mt-3 font-bold underline underline-offset-2">
+                    Обновить список
+                  </button>
+                </div>
+              ) : activeTests.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-12 text-center">
+                  <Activity className="mx-auto mb-3 text-slate-300" size={32} />
+                  <p className="font-bold text-slate-700">Сейчас нет активных мониторингов</p>
+                  <p className="mt-1 text-sm text-slate-500">Созданные и не завершённые тесты появятся здесь.</p>
+                </div>
+              ) : (
+                activeTests.map((test) => {
+                  const isStarted = Boolean(test.started);
+                  const participantCount = test.students?.length || 0;
+                  return (
+                    <div
+                      key={test.id}
+                      className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 transition hover:border-indigo-300 hover:bg-indigo-50/50 hover:shadow-md sm:gap-3 sm:p-4"
+                    >
+                      <button
+                        onClick={() => {
+                          setActiveTestsOpen(false);
+                          navigate(`/admin/test-monitor/${test.id}`);
+                        }}
+                        className="group flex min-w-0 flex-1 items-center gap-3 text-left sm:gap-4"
+                      >
+                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${isStarted ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                          {isStarted ? <Activity size={22} /> : <Clock3 size={22} />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-bold text-slate-900">{test.category || "Тест"}</span>
+                            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${isStarted ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"}`}>
+                              {isStarted ? "Идёт тест" : "Ожидает запуска"}
+                            </span>
+                          </div>
+                          <p className="mt-1 truncate text-sm text-slate-600">
+                            Группа: {test.group || "Не указана"} · {test.teacher || "Преподаватель не указан"}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            Код {test.code || "—"} · Участников: {participantCount}{test.maxStudents ? ` / ${test.maxStudents}` : ""}
+                          </p>
+                        </div>
+                        <span className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-sm font-bold text-white transition group-hover:bg-indigo-700">
+                          Открыть <ArrowRight size={16} />
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteActiveTest(test)}
+                        disabled={deletingActiveTestId === test.id}
+                        aria-label={`Удалить мониторинг ${test.code || test.id}`}
+                        title="Удалить без сохранения"
+                        className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-red-200 px-3 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:cursor-wait disabled:opacity-50 sm:px-4"
+                      >
+                        {deletingActiveTestId === test.id ? (
+                          <LoaderCircle size={17} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={17} />
+                        )}
+                        <span className="hidden sm:inline">Удалить</span>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+
       {selectedStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Фон */}

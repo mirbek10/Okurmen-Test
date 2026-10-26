@@ -49,6 +49,7 @@ export const StudentTestPage = () => {
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [submissionError, setSubmissionError] = useState("");
   const [studentData, setStudentData] = useState(null);
   const [testSessionId, setTestSessionId] = useState(null);
   const [secondsLeft, setSecondsLeft] = useState(60);
@@ -204,6 +205,7 @@ export const StudentTestPage = () => {
 
       submissionStartedRef.current = true;
       setIsSubmitting(true);
+      setSubmissionError("");
 
       const formattedAnswers = testQuestions.map((question, index) => {
         const questionId = question._id || question.id || `q_${index}`;
@@ -243,10 +245,11 @@ export const StudentTestPage = () => {
       };
 
       try {
+        let savedResponse;
         if (isAuto) {
-          await forcePostAnswere(payload);
+          savedResponse = await forcePostAnswere(payload);
         } else {
-          await postAnswe(payload);
+          savedResponse = await postAnswe(payload);
         }
 
         localStorage.removeItem(`test_session_${categoryId}`);
@@ -254,13 +257,21 @@ export const StudentTestPage = () => {
           localStorage.removeItem(testSessionId);
         }
 
-        setTestResult({ correct: formattedAnswers.filter((answer) => answer.isCorrect).length, total: formattedAnswers.length, name: studentData?.name || "Ученик" });
+        setTestResult({
+          correct: Number.isFinite(savedResponse?.result?.correctAnswers)
+            ? savedResponse.result.correctAnswers
+            : formattedAnswers.filter((answer) => answer.isCorrect).length,
+          total: Number.isFinite(savedResponse?.result?.totalQuestions)
+            ? savedResponse.result.totalQuestions
+            : formattedAnswers.length,
+          name: studentData?.name || "Ученик",
+        });
         toast.success("Результат сохранён");
         localStorage.removeItem("code");
         setIsSubmitting(false);
       } catch (err) {
         console.error("Ошибка при отправке ответов:", err);
-        setError("Ошибка при отправке результатов. Попробуйте еще раз.");
+        setSubmissionError(err.message || "Ошибка при отправке результатов. Попробуйте ещё раз.");
         setIsSubmitting(false);
         submissionStartedRef.current = false;
       }
@@ -271,7 +282,6 @@ export const StudentTestPage = () => {
       studentData,
       categoryId,
       testSessionId,
-      navigate,
       postAnswe,
       forcePostAnswere,
       isSubmitting,
@@ -485,6 +495,19 @@ export const StudentTestPage = () => {
       <div className="min-h-screen bg-gray-50 py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
+            {submissionError && (
+              <div role="alert" className="mb-4 flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
+                <span>{submissionError}. Ваши ответы сохранены на этом устройстве, попробуйте отправить ещё раз.</span>
+                <button
+                  type="button"
+                  onClick={() => submitTest(selectedAnswersRef.current, false)}
+                  disabled={isSubmitting}
+                  className="shrink-0 rounded-lg bg-red-700 px-4 py-2 font-bold text-white transition hover:bg-red-800 disabled:opacity-50"
+                >
+                  Повторить отправку
+                </button>
+              </div>
+            )}
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-2xl font-bold text-gray-800">
                 {categoryDisplayName} | {testQuestions.length}{" "}

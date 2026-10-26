@@ -1,7 +1,10 @@
 ﻿import { create } from "zustand";
 import { axiosUser } from "@/shared/lib/api/axiosUser";
 
-export const useSetAnswere = create((set, get) => ({
+const getErrorMessage = (error) =>
+    error.response?.data?.message || error.message || 'Не удалось сохранить ответы';
+
+export const useSetAnswere = create((set) => ({
     loading: false,
     error: null,
     answere:null,
@@ -11,8 +14,11 @@ export const useSetAnswere = create((set, get) => ({
             const response = await axiosUser.post(`/test/answer`, data);
             const user = response.data;
             set({ answere: user });
+            return user;
         } catch (error) {
-            set({ error: (error).message });
+            const message = getErrorMessage(error);
+            set({ error: message });
+            throw new Error(message);
         } finally {
             set({ loading: false });
         }
@@ -23,8 +29,11 @@ export const useSetAnswere = create((set, get) => ({
             const response = await axiosUser.post(`/test/forceAnswers`, data);
             const user = response.data;
             set({ answere: user });
+            return user;
         } catch (error) {
-            set({ error: (error).message });
+            const message = getErrorMessage(error);
+            set({ error: message });
+            throw new Error(message);
         } finally {
             set({ loading: false });
         }

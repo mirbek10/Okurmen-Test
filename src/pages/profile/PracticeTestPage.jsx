@@ -26,6 +26,7 @@ const shuffleArray = (array) => {
 export const PracticeTestPage = () => {
   const navigate = useNavigate();
   const { type } = useParams();
+  const category = String(type || "").toLocaleLowerCase("ru-RU") === "html" ? "html/css" : type;
 
   const [testQuestions, setTestQuestions] = useState([]);
   const [questionsLoading, setQuestionsLoading] = useState(true);
@@ -47,19 +48,19 @@ export const PracticeTestPage = () => {
       try {
         const frontCategories = ["html", "javascript", "react", "typescript", "mixed"];
         const backCategories = ["Django", "python", "backend", "Spring", "Java основы", "Java продвинутый", "Основа", "Продвинутый"];
-        const categories = type === "front" ? frontCategories : type === "back" ? backCategories : [type];
+        const categories = category === "front" ? frontCategories : category === "back" ? backCategories : [category];
         const response = await axiosUser.get("/questions/practice", {
           params: { categories: categories.join(",") },
           signal: controller.signal,
         });
         const selected = shuffleArray(response.data?.questions || []);
         if (selected.length === 0) {
-          setError(`Вопросы по категории "${type}" не найдены`);
+          setError(`Вопросы по категории "${category}" не найдены`);
         } else {
           setTestQuestions(selected);
           setTimeLeft(selected.length * 60);
         }
-      } catch (err) {
+      } catch {
         if (!controller.signal.aborted) setError("Ошибка загрузки вопросов. Попробуйте ещё раз.");
       } finally {
         if (!controller.signal.aborted) setQuestionsLoading(false);
@@ -67,7 +68,7 @@ export const PracticeTestPage = () => {
     };
     loadQuestions();
     return () => controller.abort();
-  }, [type]);
+  }, [category]);
 
   useEffect(() => {
     if (isFinished || testQuestions.length === 0) return;
@@ -87,7 +88,7 @@ export const PracticeTestPage = () => {
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [timeLeft, isFinished, testQuestions.length]);
+  }, [timeLeft, isFinished, testQuestions.length, finishTest]);
 
   const finishTest = useCallback(() => {
     if (isFinished) return;
@@ -115,7 +116,7 @@ export const PracticeTestPage = () => {
 
     const resultData = {
       id: Date.now(),
-      category: type,
+      category,
       total: testQuestions.length,
       correct: correctCount,
       answered: answeredCount,
@@ -149,7 +150,7 @@ export const PracticeTestPage = () => {
         navigate("/user/profile");
       }
     });
-  }, [testQuestions, answers, type, navigate, isFinished, timeLeft]);
+  }, [testQuestions, answers, category, navigate, isFinished, timeLeft]);
 
   const handleManualSubmit = async () => {
     const answeredCount = Object.keys(answers).length;
@@ -178,7 +179,7 @@ export const PracticeTestPage = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
         <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="font-bold text-slate-500">Подготовка вопросов: {type}...</p>
+        <p className="font-bold text-slate-500">Подготовка вопросов: {category}...</p>
       </div>
     );
   }
@@ -206,7 +207,7 @@ export const PracticeTestPage = () => {
             </div>
             <div>
               <h1 className="font-bold uppercase tracking-wider text-slate-700 text-sm md:text-base">
-                Тест: {type}
+                Тест: {category}
               </h1>
               <p className="text-xs text-slate-400 font-medium">
                 Вопрос {currentQuestionIndex + 1} из {testQuestions.length} |

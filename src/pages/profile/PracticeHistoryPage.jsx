@@ -31,7 +31,7 @@ export function PracticeHistoryPage() {
     );
     setHistory(savedHistory);
     fetchTestCategories();
-  }, []);
+  }, [fetchTestCategories]);
 
   const clearHistory = () => {
     if (window.confirm("Вы уверены, что хотите полностью очистить историю тренировок?")) {
@@ -53,10 +53,12 @@ export function PracticeHistoryPage() {
     bestScore: history.length ? Math.max(...history.map((h) => h.percent)) : 0,
   };
 
-  console.log(testCategories);
-  
+  const historyCategories = Array.from(new Set([
+    ...testCategories.map((item) => item.category).filter(Boolean),
+    ...history.map((item) => item.category || item.type).filter(Boolean),
+  ]));
 
-  if(loading && !testCategories){
+  if (loading && testCategories.length === 0) {
     return <div className="min-h-screen bg-slate-50 py-4 md:py-12 px-3 md:px-4">Загрузка...</div>
   }
 
@@ -101,16 +103,16 @@ export function PracticeHistoryPage() {
           <div className="p-2.5 bg-slate-200/50 rounded-xl text-slate-500 shrink-0">
             <Filter size={18} />
           </div>
-          {["all", ...testCategories]?.map((el, i) => (
+          {["all", ...historyCategories].map((category) => (
             <button
-              key={i}
-              onClick={() => setFilter(el.category)}
-              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap border ${filter === el.category
+              key={category}
+              onClick={() => setFilter(category)}
+              className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap border ${filter === category
                   ? "bg-slate-800 text-white border-slate-800 shadow-sm"
                   : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
                 }`}
             >
-              {el === "all" ? "Все" : el.category.toUpperCase()}
+              {category === "all" ? "Все" : category.toUpperCase()}
             </button>
           ))}
         </div>

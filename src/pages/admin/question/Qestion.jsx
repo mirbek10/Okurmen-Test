@@ -8,8 +8,10 @@ import {
   FileJson,
   FileUp,
   Filter,
+  LockKeyhole,
   Loader2,
   Plus,
+  Pencil,
   Search,
   X,
 } from "lucide-react";
@@ -116,7 +118,7 @@ function QuestionModal({ initialQuestion, categories, saving, onClose, onSave })
 
         <div className="grid gap-4 md:grid-cols-2">
           <label className="grid gap-2 text-sm font-bold text-slate-700">
-            Раздел
+            Раздел / категория
             <input
               list="question-categories"
               value={form.category}
@@ -127,6 +129,7 @@ function QuestionModal({ initialQuestion, categories, saving, onClose, onSave })
             <datalist id="question-categories">
               {categories.map((category) => <option key={category} value={category} />)}
             </datalist>
+            <span className="text-xs font-medium text-slate-500">Измените раздел, чтобы перенести только этот вопрос.</span>
           </label>
           <label className="grid gap-2 text-sm font-bold text-slate-700">
             Сложность
@@ -176,6 +179,64 @@ function QuestionModal({ initialQuestion, categories, saving, onClose, onSave })
           <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800 active:scale-[0.98] disabled:opacity-50">
             {saving && <Loader2 size={18} className="animate-spin" />}
             {initialQuestion ? "Сохранить изменения" : "Добавить вопрос"}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
+function RenameCategoryModal({ category, saving, onClose, onSave }) {
+  const [name, setName] = useState(category);
+  const [error, setError] = useState("");
+
+  const submit = async (event) => {
+    event.preventDefault();
+    setError("");
+    const nextName = name.trim();
+    if (!nextName) {
+      setError("Введите новое название категории.");
+      return;
+    }
+    if (nextName === category) {
+      setError("Новое название совпадает с текущим.");
+      return;
+    }
+    try {
+      await onSave(nextName);
+    } catch (saveError) {
+      setError(saveError.message);
+    }
+  };
+
+  return (
+    <ModalShell
+      title="Переименовать категорию"
+      description={`Название «${category}» изменится у всех вопросов этой категории.`}
+      onClose={onClose}
+      width="max-w-xl"
+    >
+      <form onSubmit={submit} className="space-y-5 p-5 md:p-7">
+        <label className="grid gap-2 text-sm font-bold text-slate-700">
+          Новое название
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            maxLength={80}
+            autoFocus
+            className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-medium outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            placeholder="Например, JavaScript"
+          />
+        </label>
+        <p className="text-xs leading-relaxed text-slate-500">
+          Вопросы останутся на месте. Если нужно переместить только один вопрос, нажмите «Изменить» у него.
+        </p>
+        {error && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</p>}
+        <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className="rounded-xl px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100">Отмена</button>
+          <button type="submit" disabled={saving} className="flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-800 disabled:opacity-50">
+            {saving && <Loader2 size={18} className="animate-spin" />}
+            Сохранить название
           </button>
         </div>
       </form>
@@ -312,6 +373,8 @@ function DeleteModal({ question, saving, onClose, onConfirm }) {
 
 export const QuestionsPage = () => {
   const store = useQuestionStore();
+  const fetchQuestions = useQuestionStore((state) => state.fetchQuestions);
+  const searchQuestions = useQuestionStore((state) => state.searchQuestions);
   const { testCategories, fetchTestCategories } = useTestCategoryStore();
   const [searchValue, setSearchValue] = useState("");
   const [editorQuestion, setEditorQuestion] = useState(null);
@@ -319,16 +382,17 @@ export const QuestionsPage = () => {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [jsonOpen, setJsonOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [renameCategoryTarget, setRenameCategoryTarget] = useState(null);
 
   useEffect(() => {
-    store.fetchQuestions({ page: 1 });
+    fetchQuestions({ page: 1 });
     fetchTestCategories();
-  }, []);
+  }, [fetchQuestions, fetchTestCategories]);
 
   useEffect(() => {
-    const timer = setTimeout(() => store.searchQuestions(searchValue.trim()), 350);
+    const timer = setTimeout(() => searchQuestions(searchValue.trim()), 350);
     return () => clearTimeout(timer);
-  }, [searchValue]);
+  }, [searchValue, searchQuestions]);
 
   const categories = useMemo(() => Array.from(new Set([
     ...store.allCategories,
@@ -370,6 +434,13 @@ export const QuestionsPage = () => {
     }
   };
 
+  const saveCategoryName = async (newCategory) => {
+    const result = await store.renameCategory(renameCategoryTarget, newCategory);
+    await fetchTestCategories();
+    toast.success(`Категория переименована. Обновлено вопросов: ${result.modifiedCount}.`);
+    setRenameCategoryTarget(null);
+  };
+
   return (
     <main className="min-h-[100dvh] bg-slate-50 px-4 py-6 text-slate-900 md:px-8 md:py-9">
       <div className="mx-auto max-w-[1400px]">
@@ -407,11 +478,33 @@ export const QuestionsPage = () => {
             </button>
             {categories.map((category) => {
               const count = store.categoryStats.find((item) => item.category === category)?.count || 0;
+              const isSelected = store.category === category;
               return (
-                <button key={category} type="button" onClick={() => store.filterByCategory(category)} className={`min-w-40 snap-start rounded-2xl border px-4 py-3 text-left transition ${store.category === category ? "border-blue-700 bg-blue-700 text-white" : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50"}`}>
-                  <span className="block truncate text-xs font-bold opacity-75">{category}</span>
-                  <strong className="mt-1 block font-mono text-xl">{count}</strong>
-                </button>
+                <div key={category} className={`relative min-w-40 snap-start rounded-2xl border transition ${isSelected ? "border-blue-700 bg-blue-700 text-white" : "border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50"}`}>
+                  <button type="button" onClick={() => store.filterByCategory(category)} className="w-full px-4 py-3 pr-11 text-left">
+                    <span className="block truncate text-xs font-bold opacity-75">{category}</span>
+                    <strong className="mt-1 block font-mono text-xl">{count}</strong>
+                  </button>
+                  {count > 0 && category.toLocaleUpperCase("ru-RU") === "РОП" ? (
+                    <span
+                      title="Системная категория специального теста РОП"
+                      aria-label="Системная категория специального теста РОП"
+                      className={`absolute right-2 top-2 rounded-lg p-1.5 ${isSelected ? "text-white/80" : "text-slate-400"}`}
+                    >
+                      <LockKeyhole size={15} />
+                    </span>
+                  ) : count > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setRenameCategoryTarget(category)}
+                      title={`Переименовать категорию ${category}`}
+                      aria-label={`Переименовать категорию ${category}`}
+                      className={`absolute right-2 top-2 rounded-lg p-1.5 transition ${isSelected ? "text-white/80 hover:bg-white/15 hover:text-white" : "text-slate-400 hover:bg-blue-100 hover:text-blue-700"}`}
+                    >
+                      <Pencil size={15} />
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -466,6 +559,7 @@ export const QuestionsPage = () => {
       </div>
 
       {editorOpen && <QuestionModal initialQuestion={editorQuestion} categories={categories} saving={store.saving} onClose={() => setEditorOpen(false)} onSave={saveQuestion} />}
+      {renameCategoryTarget && <RenameCategoryModal category={renameCategoryTarget} saving={store.saving} onClose={() => setRenameCategoryTarget(null)} onSave={saveCategoryName} />}
       {uploadOpen && <UploadModal uploading={store.uploading} onClose={() => setUploadOpen(false)} onUpload={uploadFile} />}
       {jsonOpen && <JsonImportModal uploading={store.uploading} onClose={() => setJsonOpen(false)} onImport={importJson} />}
       {deleteTarget && <DeleteModal question={deleteTarget} saving={store.saving} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete} />}
