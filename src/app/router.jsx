@@ -4,6 +4,7 @@ import UserLayout from "@/widgets/layout/UserLayout";
 import ProtectedRoute from "@/widgets/layout/ProtectedRoute";
 import ProfileLayout from "@/widgets/layout/ProfileLayout";
 import AdminLayout from "@/widgets/layout/AdminLayout";
+import AppShell from "@/widgets/layout/AppShell";
 import Login from "@/pages/auth/login/Login";
 import ForgotPassword from "@/pages/auth/login/ForgotPassword";
 import JoinTest from "@/pages/auth/register/Regist";
@@ -31,6 +32,7 @@ const PendingAuthPage = lazy(() => import("@/pages/admin/pending-auth/PendingAut
 const ROP_CATEGORY = "\u0420\u041e\u041f";
 
 export const router = createBrowserRouter([
+  { element: <AppShell />, children: [
   { element: <UserLayout />, errorElement: <RouteError />, children: [
     { path: "/", element: <Login /> },
     { path: "/auth/login", element: <Login /> },
@@ -72,4 +74,5 @@ export const router = createBrowserRouter([
     { path: "add-question", element: <Navigate to="/admin/questions" replace /> },
   ] },
   { path: "*", element: <NotFound /> },
+  ] },
 ]);

@@ -72,6 +72,7 @@ export default function JoinTest({ requiredCategory } = {}) {
       const joinedUser = await join(requiredCategory ? fullName.trim().replace(/\s+/g, " ") : user?.username || user?.name || "", normalizedCode, requiredCategory ? "" : user?.email || "", requiredCategory, getParticipantKey(normalizedCode));
       localStorage.setItem("user", JSON.stringify(joinedUser));
       localStorage.setItem("code", normalizedCode);
+      window.dispatchEvent(new Event("test-participant-updated"));
       navigate(requiredCategory ? "/rop-waiting" : "/student-waiting-list");
     } catch { /* Ошибку показывает store. */ }
   };
