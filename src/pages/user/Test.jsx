@@ -32,7 +32,8 @@ const generateTestSessionId = (categoryId, studentId) => {
 
 export const StudentTestPage = () => {
   const navigate = useNavigate();
-  const { id: categoryId } = useParams();
+  const params = useParams();
+  const categoryId = params.id || params["*"] || "";
 
   const { postAnswe, forcePostAnswere } = useSetAnswere();
   const { status, testDuration, startedAt, getStatus } = useTestStatus();

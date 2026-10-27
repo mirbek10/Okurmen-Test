@@ -42,11 +42,13 @@ export const router = createBrowserRouter([
     { path: "/rop-code", element: <JoinTest requiredCategory={ROP_CATEGORY} /> },
     { path: "/rop-waiting", element: <WaitingList entryPath="/rop-code" /> },
     { path: "/rop-student-test/:id", element: <StudentTestPage /> },
+    { path: "/rop-student-test/*", element: <StudentTestPage /> },
   ] },
   { element: <ProtectedRoute />, errorElement: <RouteError />, children: [
     { path: "/join-test", element: <JoinTest /> },
     { path: "/student-waiting-list", element: <WaitingList /> },
     { path: "/student-test/:id", element: <StudentTestPage /> },
+    { path: "/student-test/*", element: <StudentTestPage /> },
     { path: "/practice-test", element: <PracticeTestPage /> },
     { path: "/practice-test/:type", element: <PracticeTestPage /> },
     { path: "/practice-test/*", element: <PracticeTestPage /> },
