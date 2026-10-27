@@ -204,12 +204,10 @@ function Result() {
                 return totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
               }) || [];
 
-            const averageScore =
-              groupScores.length > 0
-                ? (
-                    groupScores.reduce((a, b) => a + b, 0) / groupScores.length
-                  ).toFixed(1)
-                : 0;
+            const averageScoreValue = groupScores.length > 0
+              ? groupScores.reduce((a, b) => a + b, 0) / groupScores.length
+              : 0;
+            const averageScore = averageScoreValue.toFixed(1);
             return (
               <div
                 key={test.id}
@@ -233,7 +231,10 @@ function Result() {
                     <p className="text-slate-400 uppercase text-[10px] font-bold">
                       Ср. балл группы
                     </p>
-                    <span className="font-bold text-indigo-600 text-lg">
+                    <span
+                      title={`${averageScoreValue.toFixed(6)}%`}
+                      className="font-bold text-indigo-600 text-lg cursor-help"
+                    >
                       {averageScore}%
                     </span>
                   </div>
