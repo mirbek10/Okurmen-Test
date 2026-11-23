@@ -1,6 +1,6 @@
 import { axiosAdmin } from './../../../shared/lib/api/axiosAdmin';
 import { create } from "zustand";
-import Cookies from "js-cookie";
+import { saveSession, clearSession } from '@/shared/lib/api/session';
 
 interface AdminLoginState {
         loading: boolean;
@@ -10,8 +10,8 @@ interface AdminLoginState {
         clearError: () => void;
         logout: () => void;
     }
-    
-    export const useAdminLoginStore = create<AdminLoginState>((set, get) => ({
+
+    export const useAdminLoginStore = create<AdminLoginState>((set) => ({
         loading: false,
         error: null,
         admin: null,
@@ -21,16 +21,20 @@ interface AdminLoginState {
                 set({ loading: true, error: null });
                 const response = await axiosAdmin.post('/admin/login', { email, password });
                 const admin = response.data;
-                Cookies.set('adminToken', admin.token);
+                saveSession('admin', admin);
                 set({ admin });
             } catch (error) {
-                set({ error: (error as any).response?.data?.error || (error as any).response?.data?.message || (error as Error).message });
+                const status = (error as any).response?.status;
+                const message = status === 401
+                    ? 'Неверный email или пароль администратора'
+                    : (error as any).response?.data?.error || (error as any).response?.data?.message || 'Не удалось войти. Проверьте интернет и попробуйте снова.';
+                set({ error: message });
             } finally {
                 set({ loading: false });
             }
         },
         logout: () => {
-            Cookies.remove('adminToken');
+            clearSession('admin');
             set({ admin: null });
         }
     }));

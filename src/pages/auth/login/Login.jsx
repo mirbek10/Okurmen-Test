@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
-import Cookies from "js-cookie";
+import { hasSession, clearSession } from "@/shared/lib/api/session";
 import { useAuthStore } from "@/app/stores/auth/authStore";
 import { useAdminLoginStore } from "@/app/stores/admin/adminLogin";
 
@@ -29,6 +29,8 @@ export default function Login() {
   const [pending, setPending] = useState(getPendingRegistration);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const sessionExpired = new URLSearchParams(location.search).has("expired");
+  const returnTo = typeof location.state?.from === "string" && location.state.from.startsWith("/") ? location.state.from : "/user/profile";
   const [formError, setFormError] = useState("");
   const { user, login, register, verifyRegistration, checkAdminRegistrationApproval, loading, error, clearError, fetchUserProfile } = useAuthStore();
   const { login: adminLogin, loading: adminLoading, error: adminError, admin, clearError: clearAdminError } = useAdminLoginStore();
@@ -72,15 +74,18 @@ export default function Login() {
   }, [pending, mode, checkAdminRegistrationApproval, navigate]);
 
   useEffect(() => {
-    if (user) navigate("/user/profile", { replace: true });
-    else if (Cookies.get("userToken")) {
+    if (user) navigate(returnTo, { replace: true });
+    else if (hasSession("user")) {
       fetchUserProfile().catch((profileError) => {
-        if ([401, 403, 404].includes(profileError.response?.status)) Cookies.remove("userToken");
-        else setFormError("Не удалось проверить текущий вход. Попробуйте войти снова.");
+        if ([401, 403].includes(profileError.response?.status) || profileError.name === "SessionExpiredError") clearSession("user");
+        else setFormError("Сервер пока не отвечает. Подождите немного и обновите страницу.");
         clearError();
       });
+    } else if (hasSession("admin") && location.pathname === "/") {
+      // Администратор открыл главную — сразу в панель, без повторного входа.
+      navigate("/admin/dashboard", { replace: true });
     }
-  }, [user, navigate, fetchUserProfile, clearError]);
+  }, [user, navigate, fetchUserProfile, clearError, returnTo, location.pathname]);
 
   useEffect(() => {
     if (admin) navigate("/admin/dashboard", { replace: true });
@@ -138,7 +143,7 @@ export default function Login() {
     }
     try {
       const signedInUser = await login(identifier.trim(), password);
-      if (signedInUser) navigate("/user/profile", { replace: true });
+      if (signedInUser) navigate(returnTo, { replace: true });
     } catch { /* Ошибка показана под полем. */ }
   };
 
@@ -167,6 +172,7 @@ export default function Login() {
             <button type="button" role="tab" aria-selected={mode === "register"} className={mode === "register" ? "active" : ""} onClick={() => changeMode("register")}>Регистрация</button>
           </div>}
 
+          {sessionExpired && !visibleError && (mode === "login" || mode === "admin") && <p className="form-notice" role="status">Сессия завершилась: вы долго не заходили или сменили пароль. Войдите снова — это займёт пару секунд.</p>}
           <form onSubmit={handleSubmit} className="auth-form" noValidate>
             {mode === "verify" ? <>
               <label htmlFor="auth-code">Код из письма</label>

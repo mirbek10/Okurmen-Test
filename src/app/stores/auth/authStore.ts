@@ -1,6 +1,6 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import { axiosUser } from '@/shared/lib/api/axiosUser';
-import Cookies from 'js-cookie';
+import { saveSession, clearSession } from '@/shared/lib/api/session';
 
 interface User {
     _id: string;
@@ -95,7 +95,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         try {
             const response = await axiosUser.post('/auth/verify-registration', { email, code });
             set({ user: response.data.user || null, token: response.data.token || null, loading: false });
-            if (response.data.token) Cookies.set('userToken', response.data.token, { expires: 7 });
+            saveSession('user', response.data);
             return response.data.user || null;
         } catch (error: any) {
             set({
@@ -111,7 +111,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             const response = await axiosUser.post('/auth/registration-admin-login', { token });
             if (response.status === 202 || !response.data?.token) return null;
             set({ user: response.data.user || null, token: response.data.token, loading: false, error: null });
-            Cookies.set('userToken', response.data.token, { expires: 7 });
+            saveSession('user', response.data);
             return response.data.user || null;
         } catch {
             return null;
@@ -133,7 +133,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             });
 
             if (response.data.token) {
-                Cookies.set('userToken', response.data.token, { expires: 7 });
+                saveSession('user', response.data);
             }
             return response.data.user || null;
         } catch (error: any) {
@@ -147,7 +147,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     logout: () => {
         set({ user: null, token: null });
-        Cookies.remove('userToken');
+        clearSession('user');
     },
 
     fetchUserProfile: async () => {

@@ -24,7 +24,8 @@ export function UserDashboard() {
   const [history, setHistory] = useState(getHistory);
 
   const firstName = (user?.username || user?.name || "Ученик").split(" ")[0];
-  const latest = [...history].reverse().slice(0, 3);
+  // История хранится от новых к старым (PracticeTestPage добавляет запись в начало).
+  const latest = history.slice(0, 3);
   const completed = user?.testsCompleted ?? user?.testFinished ?? 0;
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export function UserDashboard() {
               <div className="recent-row" key={`${item.date || "test"}-${index}`}>
                 <span className="recent-icon"><History size={20} /></span>
                 <div className="recent-info"><strong>{item.category || item.type || "Тренировка"}</strong><span>{item.date ? new Date(item.date).toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "Недавно"}</span></div>
-                <span className="recent-result">{item.percent ?? 0}%</span>
+                <span className="recent-result" title={`${item.correct ?? 0} из ${item.total ?? 0} правильно`}>{item.percent ?? 0}%</span>
               </div>
             ))}
           </div>

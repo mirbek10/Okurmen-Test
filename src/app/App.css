@@ -80,6 +80,7 @@ button:disabled { cursor: not-allowed; opacity: .65; }
 .text-link { display: inline-flex; align-items: center; gap: 8px; color: #286a48; font-size: 14px; font-weight: 700; }
 .text-link:hover { text-decoration: underline; }
 .form-error { margin: 1px 0 0; padding: 10px 12px; border-radius: 9px; background: #fff0ec; color: #a13527; font-size: 13px; line-height: 1.4; }
+.form-notice { margin: 0 0 14px; padding: 10px 12px; border-radius: 9px; background: var(--brand-blue-soft, #eef3ff); color: var(--brand-blue, #1845a0); font-size: 13px; line-height: 1.45; }
 .page-loading { min-height: 100dvh; display: grid; place-items: center; color: #47715b; font-weight: 600; background: #f7f8f5; }
 .session-error { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 25px; background: #f7f8f5; text-align: center; }
 .session-error h1 { margin: 0; font-size: 26px; letter-spacing: -.04em; }

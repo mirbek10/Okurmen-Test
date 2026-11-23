@@ -1,31 +1,34 @@
 import { useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
-import Cookies from "js-cookie";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/app/stores/auth/authStore";
+import { hasSession } from "@/shared/lib/api/session";
 
 export default function ProtectedRoute() {
   const { user, fetchUserProfile, logout } = useAuthStore();
-  const [checking, setChecking] = useState(Boolean(Cookies.get("userToken") && !user));
+  const location = useLocation();
+  const signedIn = hasSession("user");
+  const [checking, setChecking] = useState(Boolean(signedIn && !user));
   const [loadError, setLoadError] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const token = Cookies.get("userToken");
 
   useEffect(() => {
-    if (!token || user) return;
+    if (!signedIn || user) return;
     let active = true;
     setChecking(true);
     setLoadError(false);
     fetchUserProfile()
       .catch((error) => {
-        if ([401, 403, 404].includes(error.response?.status)) logout();
+        // 401 приходит только если токен не удалось обновить, 403 — аккаунт заблокирован.
+        // Ошибки сети и «сервер просыпается» сессию не сбрасывают.
+        if ([401, 403].includes(error.response?.status) || error.name === "SessionExpiredError") logout();
         else if (active) setLoadError(true);
       })
       .finally(() => { if (active) setChecking(false); });
     return () => { active = false; };
-  }, [token, user, fetchUserProfile, logout, attempt]);
+  }, [signedIn, user, fetchUserProfile, logout, attempt]);
 
-  if (!token) return <Navigate to="/auth/login" replace />;
+  if (!signedIn) return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
   if (checking && !user) return <div className="page-loading" role="status">Загружаем ваш кабинет...</div>;
-  if (loadError && !user) return <div className="session-error"><h1>Не удалось загрузить кабинет</h1><p>Проверьте подключение к интернету и попробуйте снова.</p><button className="primary-button" onClick={() => setAttempt((value) => value + 1)}>Повторить</button></div>;
+  if (loadError && !user) return <div className="session-error"><h1>Не удалось загрузить кабинет</h1><p>Сервер не отвечает или пропал интернет. Вы по-прежнему в аккаунте — просто попробуйте ещё раз.</p><button className="primary-button" onClick={() => setAttempt((value) => value + 1)}>Повторить</button></div>;
   return <Outlet />;
 }

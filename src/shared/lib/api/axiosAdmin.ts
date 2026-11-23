@@ -1,26 +1,10 @@
 ﻿import axios from "axios";
-import Cookies from "js-cookie";
-export const axiosAdmin = axios.create({
-  baseURL: "https://beckend-test-sqyj.onrender.com/api/",
+import { API_URL, attachSession } from "./session";
+
+export const axiosAdmin = attachSession(axios.create({
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
     Accept: "*/*",
   },
-});
-
-axiosAdmin.interceptors.request.use((config) => {
-
-    const token = Cookies.get("adminToken");
-  
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-    
-  }
-  
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
-
-
-
+}), "admin");

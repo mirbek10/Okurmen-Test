@@ -1,15 +1,9 @@
-﻿import { Outlet, useNavigate } from "react-router-dom";
+﻿import { Navigate, Outlet } from "react-router-dom";
 import { Header } from "../header/Header";
-import Cookies from "js-cookie";
-import { useEffect } from "react";
+import { hasSession } from "@/shared/lib/api/session";
+
 function AdminLayout() {
-  const nav = useNavigate();
-  const token = Cookies.get("adminToken");
-  useEffect(() => {
-    if (!token) {
-      nav("/");
-    }
-  }, [token]);
+  if (!hasSession("admin")) return <Navigate to="/auth/login" replace />;
   return (
     <div>
       <Header />
@@ -19,5 +13,3 @@ function AdminLayout() {
 }
 
 export default AdminLayout;
-
-

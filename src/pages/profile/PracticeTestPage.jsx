@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -8,10 +8,9 @@ import {
   Clock,
   Code2,
   XCircle,
-  AlertCircle
+  X
 } from "lucide-react";
 import { axiosUser } from "@/shared/lib/api/axiosUser";
-import FocusGuard from "@/shared/lib/focusGuard/FocusGuard";
 import Swal from "sweetalert2";
 
 const shuffleArray = (array) => {
@@ -152,6 +151,25 @@ export const PracticeTestPage = () => {
     return () => clearInterval(timerId);
   }, [timeLeft, isFinished, testQuestions.length, finishTest]);
 
+  // Клавиатура: 1–4 — выбрать ответ, ← / → — предыдущий / следующий вопрос.
+  useEffect(() => {
+    if (isFinished || testQuestions.length === 0) return;
+    const onKey = (event) => {
+      if (event.target.closest?.("input, textarea, .swal2-container")) return;
+      const question = testQuestions[currentQuestionIndex];
+      const digit = Number(event.key);
+      if (digit >= 1 && digit <= (question?.options.length || 0)) {
+        setAnswers((prev) => ({ ...prev, [currentQuestionIndex]: digit - 1 }));
+      } else if (event.key === "ArrowRight") {
+        setCurrentQuestionIndex((prev) => Math.min(testQuestions.length - 1, prev + 1));
+      } else if (event.key === "ArrowLeft") {
+        setCurrentQuestionIndex((prev) => Math.max(0, prev - 1));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [currentQuestionIndex, testQuestions, isFinished]);
+
   const handleManualSubmit = async () => {
     const answeredCount = Object.keys(answers).length;
 
@@ -163,10 +181,31 @@ export const PracticeTestPage = () => {
       `,
       icon: "question",
       showCancelButton: true,
+      showDenyButton: answeredCount < testQuestions.length,
       confirmButtonText: "Да, завершить",
+      denyButtonText: "К неотвеченному",
       cancelButtonText: "Отмена"
     });
     if (result.isConfirmed) finishTest();
+    else if (result.isDenied) {
+      const next = testQuestions.findIndex((_, index) => answers[index] === undefined);
+      if (next >= 0) setCurrentQuestionIndex(next);
+    }
+  };
+
+  const firstUnanswered = testQuestions.findIndex((_, index) => answers[index] === undefined);
+
+  const handleExit = async () => {
+    const result = await Swal.fire({
+      title: "Выйти из тренировки?",
+      text: "Ответы не сохранятся. Начать заново можно в любой момент.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Выйти",
+      cancelButtonText: "Продолжить",
+      reverseButtons: true,
+    });
+    if (result.isConfirmed) navigate("/user/tests");
   };
 
   const formatTime = (seconds) => {
@@ -179,30 +218,36 @@ export const PracticeTestPage = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
         <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="font-bold text-slate-500">Подготовка вопросов: {category}...</p>
+        <p className="font-bold text-slate-500">Готовим вопросы по теме «{category}»…</p>
       </div>
     );
   }
 
   if (error) return (
     <div className="min-h-screen flex flex-col items-center justify-center p-10 text-center">
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">Упс!</h2>
+      <h2 className="text-2xl font-bold text-slate-800 mb-2">Не получилось начать тренировку</h2>
       <p className="text-slate-500 mb-6">{error}</p>
-      <button onClick={() => navigate(-1)} className="bg-indigo-600 text-white px-6 py-2 rounded-xl">Назад</button>
+      <div className="flex flex-wrap justify-center gap-3">
+        <button onClick={() => window.location.reload()} className="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold">Попробовать снова</button>
+        <button onClick={() => navigate("/user/tests")} className="border border-slate-200 text-slate-700 px-6 py-2 rounded-xl font-bold">К списку тем</button>
+      </div>
     </div>
   );
 
   const currentQuestion = testQuestions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / testQuestions.length) * 100;
+  const answeredTotal = Object.keys(answers).length;
+  const progress = (answeredTotal / testQuestions.length) * 100;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      <FocusGuard reload={() => window.location.reload()} />
 
       <header className="bg-white border-b sticky top-0 z-20 px-4 py-4">
         <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+          <div className="flex items-center gap-3 min-w-0">
+            <button type="button" onClick={handleExit} aria-label="Выйти из тренировки" title="Выйти из тренировки" className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
+              <X size={22} />
+            </button>
+            <div className="hidden sm:block p-2 bg-indigo-50 rounded-lg text-indigo-600">
               <Code2 size={24} />
             </div>
             <div>
@@ -210,13 +255,12 @@ export const PracticeTestPage = () => {
                 Тест: {category}
               </h1>
               <p className="text-xs text-slate-400 font-medium">
-                Вопрос {currentQuestionIndex + 1} из {testQuestions.length} |
-                Отвечено: {Object.keys(answers).length}
+                Вопрос {currentQuestionIndex + 1} из {testQuestions.length} · Отвечено {answeredTotal} из {testQuestions.length}
               </p>
             </div>
           </div>
 
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-lg ${timeLeft < 60
+          <div title="Осталось времени" className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl font-mono font-bold text-lg ${timeLeft < 60
             ? 'bg-red-50 text-red-600 animate-pulse'
             : timeLeft < 300
               ? 'bg-orange-50 text-orange-600'
@@ -246,15 +290,17 @@ export const PracticeTestPage = () => {
               return (
                 <button
                   key={index}
+                  type="button"
+                  aria-pressed={isSelected}
                   onClick={() => setAnswers(prev => ({ ...prev, [currentQuestionIndex]: index }))}
                   className={`group w-full flex items-center p-5 rounded-2xl border-2 transition-all text-left ${isSelected
                     ? "border-indigo-600 bg-indigo-50 shadow-md shadow-indigo-100"
                     : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
                     }`}
                 >
-                  <div className={`w-6 h-6 rounded-full border-2 mr-4 flex items-center justify-center transition-colors ${isSelected ? "border-indigo-600 bg-indigo-600" : "border-slate-300 group-hover:border-slate-400"
+                  <div className={`w-8 h-8 shrink-0 rounded-full border-2 mr-4 flex items-center justify-center text-sm font-black transition-colors ${isSelected ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-300 text-slate-400 group-hover:border-slate-400"
                     }`}>
-                    {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                    {index + 1}
                   </div>
                   <span className={`text-base md:text-lg font-bold ${isSelected ? "text-indigo-900" : "text-slate-600"}`}>
                     {option}
@@ -270,17 +316,17 @@ export const PracticeTestPage = () => {
           <button
             onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
             disabled={currentQuestionIndex === 0}
-            className="flex items-center gap-2 font-bold text-slate-400 hover:text-slate-600 disabled:opacity-0 transition-all"
+            className="flex items-center gap-1 px-3 py-3 rounded-2xl font-bold text-slate-500 hover:text-slate-800 hover:bg-white disabled:invisible transition-all"
           >
             <ChevronLeft size={24} />
-            <span className="hidden md:inline">Назад</span>
+            <span>Назад</span>
           </button>
 
           <button
             onClick={handleManualSubmit}
-            className="px-6 py-3 text-slate-400 hover:text-red-500 font-bold text-sm transition-colors"
+            className="px-3 py-3 text-slate-500 hover:text-red-600 font-bold text-sm transition-colors"
           >
-            Завершить досрочно
+            Завершить
           </button>
 
           <button
@@ -301,10 +347,17 @@ export const PracticeTestPage = () => {
         </div>
 
         <div className="mt-8 bg-white rounded-2xl p-6 border border-slate-200">
-          <h3 className="font-bold text-slate-700 mb-4 text-sm uppercase tracking-wide">
-            Прогресс теста
-          </h3>
-          <div className="grid grid-cols-10 gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h3 className="font-bold text-slate-700 text-sm uppercase tracking-wide">
+              Все вопросы
+            </h3>
+            <div className="flex flex-wrap gap-3 text-xs font-semibold text-slate-500">
+              <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded bg-green-200 border border-green-300" /> Отвечен</span>
+              <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded bg-slate-100 border border-slate-200" /> Без ответа</span>
+              <span className="flex items-center gap-1.5"><i className="w-3 h-3 rounded bg-indigo-600" /> Текущий</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-6 sm:grid-cols-10 gap-2">
             {testQuestions.map((_, index) => {
               const isAnswered = answers[index] !== undefined;
               const isCurrent = index === currentQuestionIndex;
@@ -312,6 +365,9 @@ export const PracticeTestPage = () => {
               return (
                 <button
                   key={index}
+                  type="button"
+                  aria-label={`Вопрос ${index + 1}${isAnswered ? ", отвечен" : ", без ответа"}`}
+                  aria-current={isCurrent ? "step" : undefined}
                   onClick={() => setCurrentQuestionIndex(index)}
                   className={`h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${isCurrent
                     ? "bg-indigo-600 text-white ring-2 ring-indigo-300"
@@ -325,6 +381,12 @@ export const PracticeTestPage = () => {
               );
             })}
           </div>
+          {firstUnanswered >= 0 && answeredTotal > 0 && (
+            <button type="button" onClick={() => setCurrentQuestionIndex(firstUnanswered)} className="mt-4 text-sm font-bold text-indigo-600 hover:underline">
+              Перейти к первому вопросу без ответа (№{firstUnanswered + 1})
+            </button>
+          )}
+          <p className="mt-4 hidden sm:block text-xs text-slate-400">Подсказка: клавиши 1–4 выбирают ответ, стрелки ← → листают вопросы.</p>
         </div>
       </main>
     </div>

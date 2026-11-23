@@ -1,193 +1,99 @@
-﻿import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-
+﻿import { useEffect, useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { FiMenu, FiX, FiLogOut } from "react-icons/fi";
-import Cookies from "js-cookie";
+import { useAdminLoginStore } from "@/app/stores/admin/adminLogin";
 
+// Короткие подписи помещаются в одну строку уже на ноутбуке (от 1024px).
 const navItems = [
-  { path: "/admin/dashboard", label: "Главная" },
-  { path: "/admin/questions", label: "Вопросы" },
-  { path: "/admin/resalt", label: "Результаты" },
-  { path: "/admin/users", label: "Мониторинг пользователей" },
-  { path: "/admin/pending-auth", label: "Ожидающие заявки" },
-  { path: "/admin/teachers", label: "Мониторинг учителей" },
+  { path: "/admin/dashboard", label: "Главная", hint: "Тесты и запуск" },
+  { path: "/admin/questions", label: "Вопросы", hint: "База вопросов" },
+  { path: "/admin/resalt", label: "Результаты", hint: "Итоги тестов" },
+  { path: "/admin/users", label: "Ученики", hint: "Мониторинг пользователей" },
+  { path: "/admin/pending-auth", label: "Заявки", hint: "Ожидают подтверждения" },
+  { path: "/admin/teachers", label: "Учителя", hint: "Мониторинг учителей" },
 ];
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const logout = useAdminLoginStore((state) => state.logout);
 
-  const getNavLinkClass = (itemPath) => {
-    const baseClass = "text-sm font-medium transition-colors relative py-2";
-    if (location.pathname === itemPath) {
-      return `${baseClass} text-blue-600`;
-    }
-    return `${baseClass} text-slate-600 hover:text-blue-600`;
-  };
-
-  const getMobileNavLinkClass = (itemPath) => {
-    const baseClass = "block px-4 py-2 rounded-lg text-sm font-medium transition-colors";
-    if (location.pathname === itemPath) {
-      return `${baseClass} bg-blue-50 text-blue-600`;
-    }
-    return `${baseClass} text-slate-600 hover:bg-slate-50`;
-  };
+  useEffect(() => setMenuOpen(false), [location.pathname]);
 
   const handleLogout = () => {
-    Cookies.remove("adminToken");
-    window.location.href = "/";
+    if (!window.confirm("Выйти из панели администратора?")) return;
+    logout();
+    navigate("/auth/login", { replace: true });
   };
-  const isLoggedIn = Cookies.get("adminToken");
+
+  const linkClass = ({ isActive }) =>
+    `relative whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+      isActive ? "bg-blue-50 text-blue-700" : "text-slate-600 hover:bg-slate-50 hover:text-blue-700"
+    }`;
+
+  const mobileLinkClass = ({ isActive }) =>
+    `flex flex-col rounded-xl px-4 py-3 transition-colors ${
+      isActive ? "bg-blue-50 text-blue-700" : "text-slate-700 hover:bg-slate-50"
+    }`;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-blue-100 bg-white/80 backdrop-blur-xl shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <Link to="/admin/dashboard" className="admin-brand-link"><img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — окуу борбору" /></Link>
+    <header className="sticky top-0 z-40 border-b border-blue-100 bg-white/90 shadow-sm backdrop-blur-xl">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between gap-4">
+          <Link to="/admin/dashboard" className="admin-brand-link shrink-0">
+            <img className="brand-logo" src="/okurmen-logo.svg" alt="Окурмэн — панель администратора" />
+          </Link>
 
-          <nav className="hidden 2xl:flex items-center gap-5">
+          <nav className="hidden items-center gap-1 lg:flex" aria-label="Разделы панели">
             {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={getNavLinkClass(item.path)}
-                onClick={() => setMenuOpen(false)}
-              >
+              <NavLink key={item.path} to={item.path} className={linkClass} title={item.hint}>
                 {item.label}
-                {location.pathname === item.path && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full" />
-                )}
-              </Link>
+              </NavLink>
             ))}
-            
-            
           </nav>
 
-          <div className="hidden 2xl:flex items-center gap-4">
-            {isLoggedIn ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-sm flex items-center justify-center text-white text-xs font-bold">
-                    T
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm text-slate-700 font-medium">Администратор</span>
-                    <span className="text-xs text-slate-500">Активен</span>
-                  </div>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                  aria-label="Выйти"
-                  title="Выйти из системы"
-                >
-                  <FiLogOut size={18} />
-                </button>
-              </>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link
-                  to="/auth/login"
-                  className="text-sm text-slate-600 hover:text-blue-600 font-medium transition-colors"
-                >
-                  Войти
-                </Link>
-                <Link
-                  to="/auth/register"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm"
-                >
-                  Регистрация
-                </Link>
-              </div>
-            )}
+          <div className="hidden items-center gap-3 lg:flex">
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">Администратор</span>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-red-50 hover:text-red-600"
+            >
+              <FiLogOut size={16} /> Выйти
+            </button>
           </div>
 
           <button
-            className="2xl:hidden p-2 rounded-lg hover:bg-slate-50 transition-colors"
-            onClick={() => setMenuOpen(!menuOpen)}
+            type="button"
+            className="rounded-lg p-2 transition-colors hover:bg-slate-50 lg:hidden"
+            onClick={() => setMenuOpen((open) => !open)}
             aria-label={menuOpen ? "Закрыть меню" : "Открыть меню"}
             aria-expanded={menuOpen}
           >
-            {menuOpen ? (
-              <FiX size={24} className="text-slate-700" />
-            ) : (
-              <FiMenu size={24} className="text-slate-700" />
-            )}
+            {menuOpen ? <FiX size={24} className="text-slate-700" /> : <FiMenu size={24} className="text-slate-700" />}
           </button>
         </div>
 
         {menuOpen && (
-          <div className="2xl:hidden border-t border-blue-100 py-4 animate-fade-in">
-            <div className="space-y-1">
+          <div className="animate-fade-in border-t border-blue-100 py-3 lg:hidden">
+            <nav className="grid gap-1" aria-label="Разделы панели">
               {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMenuOpen(false)}
-                  className={getMobileNavLinkClass(item.path)}
-                >
-                  {item.label}
-                </Link>
+                <NavLink key={item.path} to={item.path} className={mobileLinkClass}>
+                  <span className="text-sm font-semibold">{item.label}</span>
+                  <span className="text-xs text-slate-500">{item.hint}</span>
+                </NavLink>
               ))}
-              
-              {/* {isLoggedIn && (
-                <>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setMenuOpen(false)}
-                    className={getMobileNavLinkClass("/dashboard")}
-                  >
-                    Панель управления
-                  </Link>
-                  <Link
-                    to="/tests"
-                    onClick={() => setMenuOpen(false)}
-                    className={getMobileNavLinkClass("/tests")}
-                  >
-                    Тесты
-                  </Link>
-                </>
-              )} */}
-            </div>
-
-            <div className="mt-4 pt-4 border-t border-slate-100">
-              {isLoggedIn ? (
-                <div className="px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-sm flex items-center justify-center text-white font-bold">
-                      T
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-slate-700">Преподаватель</div>
-                      <div className="text-xs text-slate-500">teacher@example.com</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="p-2 text-slate-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    aria-label="Выйти"
-                  >
-                    <FiLogOut size={20} />
-                  </button>
-                </div>
-              ) : (
-                <div className="px-4 py-2 space-y-2">
-                  <Link
-                    to="/auth/login"
-                    onClick={() => setMenuOpen(false)}
-                    className="block px-4 py-2 rounded-lg text-sm font-medium text-center bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                  >
-                    Войти
-                  </Link>
-                  <Link
-                    to="/auth/register"
-                    onClick={() => setMenuOpen(false)}
-                    className="block px-4 py-2 rounded-lg text-sm font-medium text-center bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                  >
-                    Регистрация
-                  </Link>
-                </div>
-              )}
+            </nav>
+            <div className="mt-3 flex items-center justify-between border-t border-slate-100 px-4 pt-3">
+              <span className="text-sm font-semibold text-slate-700">Администратор</span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
+              >
+                <FiLogOut size={16} /> Выйти
+              </button>
             </div>
           </div>
         )}
@@ -197,6 +103,3 @@ export function Header() {
 }
 
 export default Header;
-
-
-
